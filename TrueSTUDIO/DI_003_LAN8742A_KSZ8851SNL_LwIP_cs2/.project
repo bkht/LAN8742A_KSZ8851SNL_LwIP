@@ -252,11 +252,6 @@
 			<locationURI>PARENT-2-PROJECT_LOC/Src/sdmmc.c</locationURI>
 		</link>
 		<link>
-			<name>Application/User/sntp.c</name>
-			<type>1</type>
-			<location>C:/TrueStudio910/DI_003_LAN8742A_KSZ8851SNL_LwIP_cs2/Src/sntp.c</location>
-		</link>
-		<link>
 			<name>Application/User/sntp_client.c</name>
 			<type>1</type>
 			<location>C:/TrueStudio910/DI_003_LAN8742A_KSZ8851SNL_LwIP_cs2/Src/sntp_client.c</location>
@@ -855,6 +850,11 @@
 			<name>Middlewares/LwIP/slipif.c</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/Middlewares/Third_Party/LwIP/src/netif/slipif.c</locationURI>
+		</link>
+		<link>
+			<name>Middlewares/LwIP/sntp.c</name>
+			<type>1</type>
+			<location>C:/TrueStudio910/DI_003_LAN8742A_KSZ8851SNL_LwIP_cs2/Middlewares/Third_Party/LwIP/src/apps/sntp/sntp.c</location>
 		</link>
 		<link>
 			<name>Middlewares/LwIP/sockets.c</name>

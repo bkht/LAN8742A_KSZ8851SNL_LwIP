@@ -31,6 +31,9 @@
 #define LWIP_PBUF_MEMPOOL(name, num, payload, desc) LWIP_MEMPOOL(name, num, (MEMP_ALIGN_SIZE(sizeof(struct pbuf)) + MEMP_ALIGN_SIZE(payload)), desc)
 #endif /* LWIP_PBUF_MEMPOOL */
 
+// Jack
+// http://lwip.100.n7.nabble.com/bug-55910-MEMP-SYS-TIMEOUT-pool-runs-empty-in-sntp-scenario-td34134.html#a34139
+//#define MEMP_NUM_SYS_TIMEOUT (LWIP_NUM_SYS_TIMEOUT_INTERNAL + LWIP_SNTP) 
 
 /*
  * A list of internal pools used by LWIP.

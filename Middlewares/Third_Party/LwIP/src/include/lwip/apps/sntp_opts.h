@@ -69,7 +69,7 @@
  * \#define SNTP_SERVER_ADDRESS "pool.ntp.org"
  */
 #if !defined SNTP_SERVER_DNS || defined __DOXYGEN__
-#define SNTP_SERVER_DNS            0
+#define SNTP_SERVER_DNS            1
 #endif
 
 /**
@@ -86,7 +86,7 @@
 
 /** Set this to 1 to allow config of SNTP server(s) by DNS name */
 #if !defined SNTP_SERVER_DNS || defined __DOXYGEN__
-#define SNTP_SERVER_DNS             0
+#define SNTP_SERVER_DNS             1
 #endif
 
 /** Sanity check:

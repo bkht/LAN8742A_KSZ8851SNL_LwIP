@@ -81,9 +81,9 @@ int SNTP_Init(void)
     dmc_puts("Initializing SNTP\n");
     sntp_setoperatingmode(SNTP_OPMODE_POLL);
     //  // 1.nl.pool.ntp.org 83.98.155.30
-    IP4_ADDR(&sntpserver_ip_addr, SNTP_CONF_IPADDR0, SNTP_CONF_IPADDR1, SNTP_CONF_IPADDR2, SNTP_CONF_IPADDR3);
-    sntp_setserver(0, &sntpserver_ip_addr);
-//    sntp_setservername(0, (char*)"pool.ntp.org");
+//    IP4_ADDR(&sntpserver_ip_addr, SNTP_CONF_IPADDR0, SNTP_CONF_IPADDR1, SNTP_CONF_IPADDR2, SNTP_CONF_IPADDR3);
+//    sntp_setserver(0, &sntpserver_ip_addr);
+    sntp_setservername(0, (char*)"nl.pool.ntp.org");
 //    sntp_setservername(1, (char*)"time.windows.com");
 //    sntp_setservername(2, (char*)"time.nist.gov");
 //    sntp_set_timezone(0);
