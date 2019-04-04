@@ -63,6 +63,11 @@ extern "C" {
 
 #define ip_init() /* Compatibility define, no init needed. */
 struct netif *ip4_route(const ip4_addr_t *dest);
+// Jack 01-04-2019 select a particular netif by name
+struct netif *ip4_route_by_name(const char *name, const ip4_addr_t *dest);
+// Jack 02-04-2019 select a particular netif by name
+struct netif *ip4_route_by_src_ip(const ip4_addr_t *src, const ip4_addr_t *dest);
+
 #if LWIP_IPV4_SRC_ROUTING
 struct netif *ip4_route_src(const ip4_addr_t *dest, const ip4_addr_t *src);
 #else /* LWIP_IPV4_SRC_ROUTING */

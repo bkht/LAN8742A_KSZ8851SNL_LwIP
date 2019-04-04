@@ -39,11 +39,13 @@
 #include "lwip/stats.h"
 #include "lwip/tcp.h"
 
+#define TCP_ECHO_SERVER_DEBUG                 1
+
 #define SERVER_PORT 5005
 
 #if LWIP_TCP
 
-static struct tcp_pcb *tcp_echoserver_pcb;
+static struct tcp_pcb *tcp_echo_server_pcb;
 
 /* ECHO protocol states */
 enum tcp_echoserver_states
@@ -80,13 +82,13 @@ static void tcp_echoserver_connection_close(struct tcp_pcb *tpcb, struct tcp_ech
 void tcp_echoserver_init(void)
 {
   /* LwIP API calls tcp_new to allocate a new TCP protocol control block (PCB)
-   * (tcp_echoserver_pcb).
+   * (tcp_echo_server_pcb).
    */
   /* Creates a new TCP PCB (protocol control block). */
   /* create new tcp pcb */
-  tcp_echoserver_pcb = tcp_new();
+  tcp_echo_server_pcb = tcp_new();
 
-  if (tcp_echoserver_pcb != NULL)
+  if (tcp_echo_server_pcb != NULL)
   {
     err_t err;
     /* The allocated TCP PCB is bound to a local IP address and port using tcp_bind
@@ -94,7 +96,7 @@ void tcp_echoserver_init(void)
      */
     /* Binds a TCP PCB to a local IP address and port. */
     /* bind echo_pcb to port 7 (ECHO protocol) */
-    err = tcp_bind(tcp_echoserver_pcb, IP_ADDR_ANY, SERVER_PORT);
+    err = tcp_bind(tcp_echo_server_pcb, IP_ADDR_ANY, SERVER_PORT);
     
     if (err == ERR_OK)
     {
@@ -102,7 +104,7 @@ void tcp_echoserver_init(void)
        * listening process on the TCP PCB.
        */
       /* start tcp listening for echo_pcb */
-      tcp_echoserver_pcb = tcp_listen(tcp_echoserver_pcb);
+      tcp_echo_server_pcb = tcp_listen(tcp_echo_server_pcb);
 
       /* Finally a tcp_echoserver_accept callback function should be assigned to handle
        * incoming TCP connections on the TCP PCB. This is done using tcp_accept LwIP API
@@ -110,20 +112,22 @@ void tcp_echoserver_init(void)
        */
       /* Assigns a callback function that will be called when a new TCP connection arrives. */
       /* initialize LwIP tcp_accept callback function */
-      tcp_accept(tcp_echoserver_pcb, tcp_echoserver_accept);
+      tcp_accept(tcp_echo_server_pcb, tcp_echoserver_accept);
       /* Starting from this point, the TCP server is ready to accept any incoming connection
        * from remote clients.
        */
     }
     else 
     {
+      /* abort? output diagnostic? */
       printf("Can not bind pcb\n");
       /* deallocate the pcb */
-      memp_free(MEMP_TCP_PCB, tcp_echoserver_pcb);
+      memp_free(MEMP_TCP_PCB, tcp_echo_server_pcb);
     }
   }
   else
   {
+    /* abort? output diagnostic? */
     printf("Can not create new pcb\n");
   }
 }
@@ -220,7 +224,6 @@ static err_t tcp_echoserver_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p
   /* if we receive an empty tcp frame from client => close connection */
   if (p == NULL)
   {
-//    dmc_puts("NULL\n");
     /* remote host closed connection */
     es->state = ES_CLOSING;
     if(es->p == NULL)
@@ -242,7 +245,7 @@ static err_t tcp_echoserver_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p
   /* else : a non empty frame was received from client but for some reason err != ERR_OK */
   else if(err != ERR_OK)
   {
-//		dmc_puts("ERR_OK\n");
+    /* cleanup, for unkown reason */
     /* free received pbuf*/
     if (p != NULL)
     {
@@ -253,13 +256,14 @@ static err_t tcp_echoserver_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p
   }
   else if(es->state == ES_ACCEPTED)
   {
-//		dmc_puts("ES_ACCEPTED\n");
     /* first data chunk in p->payload */
     es->state = ES_RECEIVED;
     
     /* store reference to incoming pbuf (chain) */
     es->p = p;
     
+    /* install send completion notifier */
+
     /* initialize LwIP tcp_sent callback function */
     tcp_sent(tpcb, tcp_echoserver_sent);
     
@@ -270,8 +274,8 @@ static err_t tcp_echoserver_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p
   }
   else if (es->state == ES_RECEIVED)
   {
-//		dmc_puts("ES_RECEIVED\n");
-    /* more data received from client and previous data has been already sent*/
+    /* read some more data */
+    /* more data received from client and previous data has been already sent */
     if(es->p == NULL)
     {
       es->p = p;
@@ -285,7 +289,7 @@ static err_t tcp_echoserver_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p
     {
       struct pbuf *ptr;
 
-      /* chain pbufs to the end of what we recv'ed previously  */
+      /* chain pbufs to the end of what we recv'ed previously */
       ptr = es->p;
       pbuf_chain(ptr,p);
     }
@@ -293,7 +297,6 @@ static err_t tcp_echoserver_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p
   }
   else if(es->state == ES_CLOSING)
   {
-//		dmc_puts("ES_CLOSING\n");
     /* odd case, remote side closing twice, trash data */
     tcp_recved(tpcb, p->tot_len);
     es->p = NULL;
@@ -302,8 +305,7 @@ static err_t tcp_echoserver_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p
   }
   else
   {
-//		dmc_puts("unkown\n");
-    /* unkown es->state, trash data  */
+    /* unkown es->state, trash data */
     tcp_recved(tpcb, p->tot_len);
     es->p = NULL;
     pbuf_free(p);
@@ -325,7 +327,7 @@ static void tcp_echoserver_error(void *arg, err_t err)
 
   LWIP_UNUSED_ARG(err);
 
-  dmc_puts("tcp_echoserver_error\n");
+//  dmc_puts("tcp_echoserver_error\n");
 
   es = (struct tcp_echoserver_struct *)arg;
   if (es != NULL)
@@ -346,7 +348,7 @@ static err_t tcp_echoserver_poll(void *arg, struct tcp_pcb *tpcb)
   err_t ret_err;
   struct tcp_echoserver_struct *es;
 
-  dmc_puts("tcp_echoserver_poll\n");
+//  dmc_puts("tcp_echoserver_poll\n");
 
   es = (struct tcp_echoserver_struct *)arg;
   if (es != NULL)
@@ -402,9 +404,12 @@ static err_t tcp_echoserver_sent(void *arg, struct tcp_pcb *tpcb, u16_t len)
   }
   else
   {
+    /* no more pbufs to send */
     /* if no more data to send and client closed connection*/
     if(es->state == ES_CLOSING)
+    {
       tcp_echoserver_connection_close(tpcb, es);
+    }
   }
   return ERR_OK;
 }
@@ -431,6 +436,7 @@ static void tcp_echoserver_send(struct tcp_pcb *tpcb, struct tcp_echoserver_stru
     /* get pointer on pbuf from es structure */
     ptr = es->p;
 
+#if (TCP_ECHO_SERVER_DEBUG)
     uint8_t local_ip[4];
     local_ip[0] = (tpcb->local_ip.addr & 0xff);
     local_ip[1] = (tpcb->local_ip.addr & 0xff00) >> 8;
@@ -455,8 +461,8 @@ static void tcp_echoserver_send(struct tcp_pcb *tpcb, struct tcp_echoserver_stru
     dmc_putint((tpcb->remote_ip.addr & 0xff0000) >> 16);
     dmc_putc('.');
     dmc_putint((tpcb->remote_ip.addr & 0xff000000) >> 24);
-//    dmc_putc(':');
-//    dmc_putint(tpcb->remote_port);
+    //    dmc_putc(':');
+    //    dmc_putint(tpcb->remote_port);
     dmc_puts(" -> ");
     dmc_putint((tpcb->local_ip.addr & 0xff));
     dmc_putc('.');
@@ -469,52 +475,54 @@ static void tcp_echoserver_send(struct tcp_pcb *tpcb, struct tcp_echoserver_stru
     dmc_putint(tpcb->local_port);
     dmc_putc('\n');
 
-//	dmc_puts("Payload: ");
-	dmc_putslen(ptr->payload, ptr->len);
-	dmc_putcr();
-	dmc_swap_case_len(ptr->payload, ptr->len);
-//	dmc_putslen(ptr->payload, ptr->len);
-//	dmc_putcr();
-  dmc_puts(TERMINAL_DEFAULT);
+    //	dmc_puts("Payload: ");
+    dmc_putslen(ptr->payload, ptr->len);
+    dmc_putcr();
+    dmc_swap_case_len(ptr->payload, ptr->len);
+    //	dmc_putslen(ptr->payload, ptr->len);
+    //	dmc_putcr();
+    dmc_puts(TERMINAL_DEFAULT);
+#endif
 
     /* enqueue data for transmission */
     wr_err = tcp_write(tpcb, ptr->payload, ptr->len, 1);
-    
+
     if (wr_err == ERR_OK)
     {
       u16_t plen;
       u8_t freed;
 
       plen = ptr->len;
-     
+
       /* continue with next pbuf in chain (if any) */
       es->p = ptr->next;
-      
+
       if(es->p != NULL)
       {
+        /* new reference! */
         /* increment reference count for es->p */
         pbuf_ref(es->p);
       }
-      
-     /* chop first pbuf from chain */
+
+      /* chop first pbuf from chain */
       do
       {
         /* try hard to free pbuf */
         freed = pbuf_free(ptr);
       }
       while(freed == 0);
-     /* we can read more data now */
-     tcp_recved(tpcb, plen);
-   }
-   else if(wr_err == ERR_MEM)
-   {
+      /* we can read more data now */
+      tcp_recved(tpcb, plen);
+    }
+    else if(wr_err == ERR_MEM)
+    {
       /* we are low on memory, try later / harder, defer to poll */
-     es->p = ptr;
-   }
-   else
-   {
-     /* other problem ?? */
-   }
+      es->p = ptr;
+    }
+    else
+    {
+      /* other problem ?? */
+    }
   }
 }
 

@@ -24,6 +24,13 @@
 #include "lwip/err.h"
 #include "lwip/netif.h"
 
+#define LAN8742_ETHERNET_CONF_ETHADDR0                        0x00
+#define LAN8742_ETHERNET_CONF_ETHADDR1                        0x80
+#define LAN8742_ETHERNET_CONF_ETHADDR2                        0xe1
+#define LAN8742_ETHERNET_CONF_ETHADDR3                        0x00
+#define LAN8742_ETHERNET_CONF_ETHADDR4                        0x00
+#define LAN8742_ETHERNET_CONF_ETHADDR5                        0x00
+
 /* Within 'USER CODE' section, code will be kept by default at each generation */
 /* USER CODE BEGIN 0 */
 

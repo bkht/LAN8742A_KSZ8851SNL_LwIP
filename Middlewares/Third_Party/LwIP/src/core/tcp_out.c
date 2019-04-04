@@ -58,6 +58,8 @@
 
 #include <string.h>
 
+#define TCP_OUT_DEBUG                 0
+
 /* Define some copy-macros for checksum-on-copy so that the code looks
    nicer by preventing too many ifdef's. */
 #if TCP_CHECKSUM_ON_COPY
@@ -367,6 +369,10 @@ tcp_write_checks(struct tcp_pcb *pcb, u16_t len)
 err_t
 tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
 {
+#if (TCP_OUT_DEBUG)
+  dmc_puts("tcp_write\n");
+#endif
+
   struct pbuf *concat_p = NULL;
   struct tcp_seg *last_unsent = NULL, *seg = NULL, *prev_seg = NULL, *queue = NULL;
   u16_t pos = 0; /* position in 'arg' data */
@@ -953,7 +959,9 @@ tcp_send_empty_ack(struct tcp_pcb *pcb)
   }
 #endif
 
-  netif = ip_route(&pcb->local_ip, &pcb->remote_ip);
+  // Jack 02-04-2019 select a particular netif by name
+//  netif = ip_route(&pcb->local_ip, &pcb->remote_ip);
+  netif = ip4_route_by_src_ip(pcb->local_ip.addr, &pcb->remote_ip);
   if (netif == NULL) {
     err = ERR_RTE;
   } else {
@@ -1000,6 +1008,10 @@ tcp_output(struct tcp_pcb *pcb)
   s16_t i = 0;
 #endif /* TCP_CWND_DEBUG */
 
+#if (TCP_OUT_DEBUG)
+  dmc_puts("tcp_output\n");
+#endif
+
   /* pcb->state LISTEN not allowed here */
   LWIP_ASSERT("don't call tcp_output for listen-pcbs",
     pcb->state != LISTEN);
@@ -1034,10 +1046,52 @@ tcp_output(struct tcp_pcb *pcb)
     for (; useg->next != NULL; useg = useg->next);
   }
 
-  netif = ip_route(&pcb->local_ip, &pcb->remote_ip);
+  // Jack 02-04-2019 select a particular netif by name
+//  netif = ip_route(&pcb->local_ip, &pcb->remote_ip);
+  netif = ip4_route_by_src_ip(pcb->local_ip.addr, &pcb->remote_ip);
   if (netif == NULL) {
     return ERR_RTE;
   }
+
+#if (TCP_OUT_DEBUG)
+  dmc_puts("tcp_output to ");
+  dmc_puthex2(netif->hwaddr[0]);
+  dmc_putc(':');
+  dmc_puthex2(netif->hwaddr[1]);
+  dmc_putc(':');
+  dmc_puthex2(netif->hwaddr[2]);
+  dmc_putc(':');
+  dmc_puthex2(netif->hwaddr[3]);
+  dmc_putc(':');
+  dmc_puthex2(netif->hwaddr[4]);
+  dmc_putc(':');
+  dmc_puthex2(netif->hwaddr[5]);
+  dmc_putc(' ');
+  dmc_putint(netif->ip_addr.addr & 0xff);
+  dmc_putc('.');
+  dmc_putint((netif->ip_addr.addr & 0xff00) >> 8);
+  dmc_putc('.');
+  dmc_putint((netif->ip_addr.addr & 0xff0000) >> 16);
+  dmc_putc('.');
+  dmc_putint((netif->ip_addr.addr & 0xff000000) >> 24);
+  dmc_putc(' ');
+  dmc_putint(pcb->local_ip.addr & 0xff);
+  dmc_putc('.');
+  dmc_putint((pcb->local_ip.addr & 0xff00) >> 8);
+  dmc_putc('.');
+  dmc_putint((pcb->local_ip.addr & 0xff0000) >> 16);
+  dmc_putc('.');
+  dmc_putint((pcb->local_ip.addr & 0xff000000) >> 24);
+  dmc_putc(' ');
+  dmc_putint(pcb->remote_ip.addr & 0xff);
+  dmc_putc('.');
+  dmc_putint((pcb->remote_ip.addr & 0xff00) >> 8);
+  dmc_putc('.');
+  dmc_putint((pcb->remote_ip.addr & 0xff0000) >> 16);
+  dmc_putc('.');
+  dmc_putint((pcb->remote_ip.addr & 0xff000000) >> 24);
+  dmc_putc('\n');
+#endif
 
   /* If we don't have a local IP address, we get one from netif */
   if (ip_addr_isany(&pcb->local_ip)) {
@@ -1373,7 +1427,9 @@ tcp_rst(u32_t seqno, u32_t ackno,
   TCP_STATS_INC(tcp.xmit);
   MIB2_STATS_INC(mib2.tcpoutrsts);
 
-  netif = ip_route(local_ip, remote_ip);
+  // Jack 02-04-2019 select a particular netif by name
+//  netif = ip_route(local_ip, remote_ip);
+  netif = ip4_route_by_src_ip(local_ip, remote_ip);
   if (netif != NULL) {
 #if CHECKSUM_GEN_TCP
     IF__NETIF_CHECKSUM_ENABLED(netif, NETIF_CHECKSUM_GEN_TCP) {
@@ -1548,7 +1604,10 @@ tcp_keepalive(struct tcp_pcb *pcb)
                 ("tcp_keepalive: could not allocate memory for pbuf\n"));
     return ERR_MEM;
   }
-  netif = ip_route(&pcb->local_ip, &pcb->remote_ip);
+  // Jack 02-04-2019 select a particular netif by name
+//  netif = ip_route(&pcb->local_ip, &pcb->remote_ip);
+//  netif = ip_route(local_ip, remote_ip);
+  netif = ip4_route_by_src_ip(&pcb->local_ip.addr, &pcb->remote_ip);
   if (netif == NULL) {
     err = ERR_RTE;
   } else {
@@ -1642,7 +1701,9 @@ tcp_zero_window_probe(struct tcp_pcb *pcb)
     pcb->snd_nxt = snd_nxt;
   }
 
-  netif = ip_route(&pcb->local_ip, &pcb->remote_ip);
+  // Jack 02-04-2019 select a particular netif by name
+//  netif = ip_route(&pcb->local_ip, &pcb->remote_ip);
+  netif = ip4_route_by_src_ip(&pcb->local_ip.addr, &pcb->remote_ip);
   if (netif == NULL) {
     err = ERR_RTE;
   } else {

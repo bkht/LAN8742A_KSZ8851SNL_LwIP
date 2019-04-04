@@ -61,6 +61,10 @@
 #define KSZ8851_ETHERNET_CONF_ETHADDR4_0                        0x00
 #define KSZ8851_ETHERNET_CONF_ETHADDR5_0                        0x01
 
+/** @defgroup KSZ8851_0_Status KSZ8851_0 Status
+  * @{
+  */
+
 
 static void low_level_init_KSZ8851_0(struct netif *netif);
 static err_t low_level_output_KSZ8851_0(struct netif *netif, struct pbuf *p);

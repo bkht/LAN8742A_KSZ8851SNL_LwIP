@@ -45,11 +45,25 @@ extern "C"
 // max frame length which the conroller will accept:
 #define   MAX_FRAMELEN    1518        // (note: maximum ethernet frame length would be 1518)
 
+#define KSZ8851_0_STATUS_READ_ERROR            ((int32_t)-5)
+#define KSZ8851_0_STATUS_WRITE_ERROR           ((int32_t)-4)
+#define KSZ8851_0_STATUS_ADDRESS_ERROR         ((int32_t)-3)
+#define KSZ8851_0_STATUS_RESET_TIMEOUT         ((int32_t)-2)
+#define KSZ8851_0_STATUS_ERROR                 ((int32_t)-1)
+#define KSZ8851_0_STATUS_OK                    ((int32_t) 0)
+#define KSZ8851_0_STATUS_LINK_DOWN             ((int32_t) 1)
+#define KSZ8851_0_STATUS_100MBITS_FULLDUPLEX   ((int32_t) 2)
+#define KSZ8851_0_STATUS_100MBITS_HALFDUPLEX   ((int32_t) 3)
+#define KSZ8851_0_STATUS_10MBITS_FULLDUPLEX    ((int32_t) 4)
+#define KSZ8851_0_STATUS_10MBITS_HALFDUPLEX    ((int32_t) 5)
+#define KSZ8851_0_STATUS_AUTONEGO_NOTDONE      ((int32_t) 6)
+
+
 typedef enum
 {
-	INT_SPI_READY,
-	INT_SPI_BUSY,
-	INT_SPI_ERROR
+	INT_SPI_READY_0,
+	INT_SPI_BUSY_0,
+	INT_SPI_ERROR_0
 } spi_int_codes;
 
 //#define SET_SPI_CS_PIN_NO_DELAY()	{ \
@@ -151,6 +165,8 @@ void wait_dma_tx_ended_0(void);
 void clr_dma_rx_ended_0(void);
 void set_dma_rx_ended_0(void);
 void wait_dma_rx_ended_0(void);
+
+uint32_t KSZ8851_0_GetLinkState(void);
 
 #ifdef __cplusplus
 }

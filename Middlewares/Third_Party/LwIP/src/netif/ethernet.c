@@ -60,6 +60,8 @@
 #include LWIP_HOOK_FILENAME
 #endif
 
+#define ETHERNET_INPUT_DEBUG   0
+
 const struct eth_addr ethbroadcast = {{0xff,0xff,0xff,0xff,0xff,0xff}};
 const struct eth_addr ethzero = {{0,0,0,0,0,0}};
 
@@ -103,6 +105,81 @@ ethernet_input(struct pbuf *p, struct netif *netif)
      (unsigned)ethhdr->src.addr[0],  (unsigned)ethhdr->src.addr[1],  (unsigned)ethhdr->src.addr[2],
      (unsigned)ethhdr->src.addr[3],  (unsigned)ethhdr->src.addr[4],  (unsigned)ethhdr->src.addr[5],
      lwip_htons(ethhdr->type)));
+
+#if (ETHERNET_INPUT_DEBUG)
+  uint8_t MAC_PC[] = { 0xb4, 0xb6, 0x86, 0x8e, 0x57, 0xbf };
+  uint8_t MAC_ST[] = { 0x00, 0x80, 0xe1, 0x00, 0x00, 0x00 };
+  uint8_t MAC_M1[] = { 0x00, 0x80, 0xe1, 0x00, 0x00, 0x01 };
+  uint8_t MAC_M2[] = { 0x00, 0x80, 0xe1, 0x00, 0x00, 0x02 };
+  uint8_t match = 0;
+  uint8_t netif_no = 0;
+
+  if (memcmp(ethhdr->src.addr, MAC_PC, 6) == 0)
+  {
+    match = 1;
+  }
+  if (memcmp(ethhdr->dest.addr, MAC_ST, 6) == 0)
+  {
+    match = 1;
+    netif_no = 1;
+  }
+  if (memcmp(ethhdr->dest.addr, MAC_M1, 6) == 0)
+  {
+    match = 1;
+    netif_no = 2;
+  }
+  if (memcmp(ethhdr->dest.addr, MAC_M2, 6) == 0)
+  {
+    match = 1;
+    netif_no = 3;
+  }
+//  match = 1;
+
+  if (match)
+  {
+    if (netif_no == 1)
+    {
+      dmc_puts(TERMINAL_LIGHT_GREEN);
+    }
+    if (netif_no == 2)
+    {
+      dmc_puts(TERMINAL_LIGHT_CYAN);
+    }
+    if (netif_no == 3)
+    {
+      dmc_puts(TERMINAL_LIGHT_BLUE);
+    }
+    dmc_putc(netif->name[0]);
+    dmc_putc(netif->name[1]);
+    dmc_putc(' ');
+
+    dmc_puthex2(ethhdr->dest.addr[0]);
+    dmc_putc(':');
+    dmc_puthex2(ethhdr->dest.addr[1]);
+    dmc_putc(':');
+    dmc_puthex2(ethhdr->dest.addr[2]);
+    dmc_putc(':');
+    dmc_puthex2(ethhdr->dest.addr[3]);
+    dmc_putc(':');
+    dmc_puthex2(ethhdr->dest.addr[4]);
+    dmc_putc(':');
+    dmc_puthex2(ethhdr->dest.addr[5]);
+    dmc_putc(' ');
+    dmc_puthex2(ethhdr->src.addr[0]);
+    dmc_putc(':');
+    dmc_puthex2(ethhdr->src.addr[1]);
+    dmc_putc(':');
+    dmc_puthex2(ethhdr->src.addr[2]);
+    dmc_putc(':');
+    dmc_puthex2(ethhdr->src.addr[3]);
+    dmc_putc(':');
+    dmc_puthex2(ethhdr->src.addr[4]);
+    dmc_putc(':');
+    dmc_puthex2(ethhdr->src.addr[5]);
+    dmc_putc('\n');
+    dmc_puts(TERMINAL_DEFAULT);
+  }
+#endif
 
   type = ethhdr->type;
 #if ETHARP_SUPPORT_VLAN

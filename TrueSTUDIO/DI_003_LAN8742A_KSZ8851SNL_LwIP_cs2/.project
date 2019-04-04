@@ -252,6 +252,16 @@
 			<locationURI>PARENT-2-PROJECT_LOC/Src/sdmmc.c</locationURI>
 		</link>
 		<link>
+			<name>Application/User/sntp.c</name>
+			<type>1</type>
+			<location>C:/TrueStudio910/DI_003_LAN8742A_KSZ8851SNL_LwIP_cs2/Src/sntp.c</location>
+		</link>
+		<link>
+			<name>Application/User/sntp_client.c</name>
+			<type>1</type>
+			<location>C:/TrueStudio910/DI_003_LAN8742A_KSZ8851SNL_LwIP_cs2/Src/sntp_client.c</location>
+		</link>
+		<link>
 			<name>Application/User/spi.c</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/Src/spi.c</locationURI>
@@ -275,6 +285,16 @@
 			<name>Application/User/tcp_echoserver.c</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/Src/tcp_echoserver.c</locationURI>
+		</link>
+		<link>
+			<name>Application/User/udp_echoclient.c</name>
+			<type>1</type>
+			<location>C:/TrueStudio910/DI_003_LAN8742A_KSZ8851SNL_LwIP_cs2/Src/udp_echoclient.c</location>
+		</link>
+		<link>
+			<name>Application/User/udp_echoserver.c</name>
+			<type>1</type>
+			<location>C:/TrueStudio910/DI_003_LAN8742A_KSZ8851SNL_LwIP_cs2/Src/udp_echoserver.c</location>
 		</link>
 		<link>
 			<name>Application/User/usart.c</name>

@@ -53,17 +53,31 @@
 #include <string.h>
 #include "tcp_echoclient.h"
 
+#define TCP_ECHO_CLIENT_DEBUG                 0
+
+/*Static DEST IP ADDRESS: DEST_IP_ADDR0.DEST_IP_ADDR1.DEST_IP_ADDR2.DEST_IP_ADDR3 */
+#define DEST_IP_ADDR0   ((uint8_t)192U)
+#define DEST_IP_ADDR1   ((uint8_t)168U)
+#define DEST_IP_ADDR2   ((uint8_t)25U)
+#define DEST_IP_ADDR3   ((uint8_t)148U)
+
+//#define DEST_PORT       ((uint16_t)53831U)
+#define DEST_PORT       ((uint16_t)502U)
+
+#define NETIF_NAME                            "m1"
+
+
 #if LWIP_TCP
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 u8_t  recev_buf[50];
-__IO uint32_t message_count=0;
+__IO uint32_t tcp_ec_message_count=0;
 
-u8_t   data[100];
+u8_t   ec_data[100];
 
-struct tcp_pcb *echoclient_pcb;
+struct tcp_pcb *tcp_echo_client_pcb;
 
 /* ECHO protocol states */
 enum echoclient_states
@@ -90,14 +104,6 @@ static err_t tcp_echoclient_sent(void *arg, struct tcp_pcb *tpcb, u16_t len);
 static void tcp_echoclient_send(struct tcp_pcb *tpcb, struct echoclient * es);
 static err_t tcp_echoclient_connected(void *arg, struct tcp_pcb *tpcb, err_t err);
 
-/*Static DEST IP ADDRESS: DEST_IP_ADDR0.DEST_IP_ADDR1.DEST_IP_ADDR2.DEST_IP_ADDR3 */
-#define DEST_IP_ADDR0   ((uint8_t)192U)
-#define DEST_IP_ADDR1   ((uint8_t)168U)
-#define DEST_IP_ADDR2   ((uint8_t)25U)
-#define DEST_IP_ADDR3   ((uint8_t)148U)
-
-#define DEST_PORT       ((uint16_t)53831U)
-
 /* Private functions ---------------------------------------------------------*/
 
 
@@ -110,44 +116,57 @@ void tcp_echoclient_connect(void)
 {
   ip_addr_t DestIPaddr;
   
+  ip4_addr_t ipaddr;
+  ipaddr.addr = 192 | (168 << 8) | (25 << 16) || (232 << 24);
+  ip4_addr_t netmask;
+  ipaddr.addr = 255 | (255 << 8) | (255 << 16) || (0 << 24);
+  ip4_addr_t gw;
+  ipaddr.addr = 192 | (168 << 8) | (25 << 16) || (253 << 24);
+
+//  netif_set_addr(&gnetif0, &ipaddr, &netmask, &gw);
+
   /* create new tcp pcb */
-  echoclient_pcb = tcp_new();
+  tcp_echo_client_pcb = tcp_new();
   
-  if (echoclient_pcb != NULL)
+  if (tcp_echo_client_pcb != NULL)
   {
     IP4_ADDR( &DestIPaddr, DEST_IP_ADDR0, DEST_IP_ADDR1, DEST_IP_ADDR2, DEST_IP_ADDR3 );
 
-//    echoclient_pcb->local_ip.addr = 192 | (168 << 8) | (25 << 16) || (232 << 24);
+//    tcp_echo_client_pcb->local_ip.addr = 192 | (168 << 8) | (25 << 16) || (232 << 24);
 
 
-    /* connect to destination address/port */
-    tcp_connect(echoclient_pcb, &DestIPaddr, DEST_PORT, tcp_echoclient_connected);
+    /* from a specified netif connect to destination address/port */
+    const char netif_name[] = NETIF_NAME;
+    tcp_connect_by_name(netif_name, tcp_echo_client_pcb, &DestIPaddr, DEST_PORT, tcp_echoclient_connected);
 
-    dmc_putint((echoclient_pcb->local_ip.addr & 0xff));
+#if (TCP_ECHO_CLIENT_DEBUG)
+    dmc_puts("tcp_echoclient_connect\n");
+    dmc_putint((tcp_echo_client_pcb->local_ip.addr & 0xff));
     dmc_putc('.');
-    dmc_putint((echoclient_pcb->local_ip.addr & 0xff00) >> 8);
+    dmc_putint((tcp_echo_client_pcb->local_ip.addr & 0xff00) >> 8);
     dmc_putc('.');
-    dmc_putint((echoclient_pcb->local_ip.addr & 0xff0000) >> 16);
+    dmc_putint((tcp_echo_client_pcb->local_ip.addr & 0xff0000) >> 16);
     dmc_putc('.');
-    dmc_putint((echoclient_pcb->local_ip.addr & 0xff000000) >> 24);
+    dmc_putint((tcp_echo_client_pcb->local_ip.addr & 0xff000000) >> 24);
     dmc_putc(':');
-    dmc_putint(echoclient_pcb->local_port);
+    dmc_putint(tcp_echo_client_pcb->local_port);
     dmc_puts(" -> ");
-    dmc_putint((echoclient_pcb->remote_ip.addr & 0xff));
+    dmc_putint((tcp_echo_client_pcb->remote_ip.addr & 0xff));
     dmc_putc('.');
-    dmc_putint((echoclient_pcb->remote_ip.addr & 0xff00) >> 8);
+    dmc_putint((tcp_echo_client_pcb->remote_ip.addr & 0xff00) >> 8);
     dmc_putc('.');
-    dmc_putint((echoclient_pcb->remote_ip.addr & 0xff0000) >> 16);
+    dmc_putint((tcp_echo_client_pcb->remote_ip.addr & 0xff0000) >> 16);
     dmc_putc('.');
-    dmc_putint((echoclient_pcb->remote_ip.addr & 0xff000000) >> 24);
+    dmc_putint((tcp_echo_client_pcb->remote_ip.addr & 0xff000000) >> 24);
     dmc_putc(':');
-    dmc_putint(echoclient_pcb->remote_port);
+    dmc_putint(tcp_echo_client_pcb->remote_port);
     dmc_putc('\n');
+#endif
   }
   else
   {
     /* deallocate the pcb */
-    memp_free(MEMP_TCP_PCB, echoclient_pcb);
+    memp_free(MEMP_TCP_PCB, tcp_echo_client_pcb);
 #ifdef SERIAL_DEBUG
     printf("\n\r can not create tcp pcb");
 #endif 
@@ -156,14 +175,38 @@ void tcp_echoclient_connect(void)
 
 /**
   * @brief Function called when TCP connection established
-  * @param tpcb: pointer on the connection contol block
+  * @param tpcb: pointer on the connection control block
   * @param err: when connection correctly established err should be ERR_OK 
   * @retval err_t: returned error 
   */
 static err_t tcp_echoclient_connected(void *arg, struct tcp_pcb *tpcb, err_t err)
 {
   struct echoclient *es = NULL;
-  
+
+#if (TCP_ECHO_CLIENT_DEBUG)
+  dmc_puts("tcp_echoclient_connected\n");
+  dmc_putint((tpcb->local_ip.addr & 0xff));
+  dmc_putc('.');
+  dmc_putint((tpcb->local_ip.addr & 0xff00) >> 8);
+  dmc_putc('.');
+  dmc_putint((tpcb->local_ip.addr & 0xff0000) >> 16);
+  dmc_putc('.');
+  dmc_putint((tpcb->local_ip.addr & 0xff000000) >> 24);
+  dmc_putc(':');
+  dmc_putint(tpcb->local_port);
+  dmc_puts(" -> ");
+  dmc_putint((tpcb->remote_ip.addr & 0xff));
+  dmc_putc('.');
+  dmc_putint((tpcb->remote_ip.addr & 0xff00) >> 8);
+  dmc_putc('.');
+  dmc_putint((tpcb->remote_ip.addr & 0xff0000) >> 16);
+  dmc_putc('.');
+  dmc_putint((tpcb->remote_ip.addr & 0xff000000) >> 24);
+  dmc_putc(':');
+  dmc_putint(tpcb->remote_port);
+  dmc_putc('\n');
+#endif
+
   if (err == ERR_OK)   
   {
     /* allocate structure es to maintain tcp connection informations */
@@ -174,16 +217,21 @@ static err_t tcp_echoclient_connected(void *arg, struct tcp_pcb *tpcb, err_t err
       es->state = ES_CONNECTED;
       es->pcb = tpcb;
       
-      sprintf((char*)data, "sending tcp client message %d", (int)message_count);
-      message_count++;
+      sprintf((char*)ec_data, "Sending TCP Client message %d", (int)tcp_ec_message_count);
+      tcp_ec_message_count++;
         
       /* allocate pbuf */
-      es->p_tx = pbuf_alloc(PBUF_TRANSPORT, strlen((char*)data) , PBUF_POOL);
+      es->p_tx = pbuf_alloc(PBUF_TRANSPORT, strlen((char*)ec_data) , PBUF_POOL);
          
       if (es->p_tx)
       {       
+//#if (TCP_ECHO_CLIENT_DEBUG)
+        dmc_puts("TCP echo client send data\n");
+        dmc_putscr(ec_data);
+//#endif
+
         /* copy data to pbuf */
-        pbuf_take(es->p_tx, (char*)data, strlen((char*)data));
+        pbuf_take(es->p_tx, (char*)ec_data, strlen((char*)ec_data));
         
         /* pass newly allocated es structure as argument to tpcb */
         tcp_arg(tpcb, es);
@@ -198,7 +246,7 @@ static err_t tcp_echoclient_connected(void *arg, struct tcp_pcb *tpcb, err_t err
         tcp_poll(tpcb, tcp_echoclient_poll, 1);
     
         /* send data */
-        tcp_echoclient_send(tpcb,es);
+        tcp_echoclient_send(tpcb, es);
         
         return ERR_OK;
       }
@@ -206,6 +254,10 @@ static err_t tcp_echoclient_connected(void *arg, struct tcp_pcb *tpcb, err_t err
     else
     {
       /* close connection */
+#if (TCP_ECHO_CLIENT_DEBUG)
+      dmc_puts("close connection\n");
+#endif
+
       tcp_echoclient_connection_close(tpcb, es);
       
       /* return memory allocation error */
@@ -232,6 +284,10 @@ static err_t tcp_echoclient_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p
   struct echoclient *es;
   err_t ret_err; 
 
+#if (TCP_ECHO_CLIENT_DEBUG)
+  dmc_puts("tcp_echoclient_recv\n");
+#endif
+
   LWIP_ASSERT("arg != NULL",arg != NULL);
   
   es = (struct echoclient *)arg;
@@ -240,6 +296,10 @@ static err_t tcp_echoclient_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p
   if (p == NULL)
   {
     /* remote host closed connection */
+#if (TCP_ECHO_CLIENT_DEBUG)
+    dmc_puts("remote host closed connection\n");
+#endif
+
     es->state = ES_CLOSING;
     if(es->p_tx == NULL)
     {
@@ -256,7 +316,11 @@ static err_t tcp_echoclient_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p
   /* else : a non empty frame was received from echo server but for some reason err != ERR_OK */
   else if(err != ERR_OK)
   {
-    /* free received pbuf*/
+    /* free received pbuf */
+#if (TCP_ECHO_CLIENT_DEBUG)
+    dmc_puts("free received pbuf\n");
+#endif
+
     if (p != NULL)
     {
       pbuf_free(p);
@@ -266,8 +330,59 @@ static err_t tcp_echoclient_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p
   else if(es->state == ES_CONNECTED)
   {
     /* increment message count */
-    message_count++;
-         
+
+    tcp_ec_message_count++;
+
+    if (p->len)
+    {
+      uint8_t local_ip[4];
+      local_ip[0] = (tpcb->local_ip.addr & 0xff);
+      local_ip[1] = (tpcb->local_ip.addr & 0xff00) >> 8;
+      local_ip[2] = (tpcb->local_ip.addr & 0xff0000) >> 16;
+      local_ip[3] = (tpcb->local_ip.addr & 0xff000000) >> 24;
+      if (local_ip[3] == 232)
+      {
+        dmc_puts(TERMINAL_LIGHT_GREEN);
+      }
+      if (local_ip[3] == 233)
+      {
+        dmc_puts(TERMINAL_LIGHT_CYAN);
+      }
+      if (local_ip[3] == 234)
+      {
+        dmc_puts(TERMINAL_LIGHT_BLUE);
+      }
+      dmc_puts("Received ");
+      dmc_putint(p->len);
+      dmc_puts(" Bytes via ");
+      dmc_putint(local_ip[0]);
+      dmc_putc('.');
+      dmc_putint(local_ip[1]);
+      dmc_putc('.');
+      dmc_putint(local_ip[2]);
+      dmc_putc('.');
+      dmc_putint(local_ip[3]);
+      dmc_putc('\n');
+
+//      for (uint16_t i = 0; i < p->len; i++)
+//      {
+//        uint8_t c = pbuf_get_at(p, i);
+//        dmc_puthex2(c);
+//        dmc_putc(' ');
+//      }
+//      dmc_putc('\n');
+      for (uint16_t i = 0; i < p->len; i++)
+      {
+        uint8_t c = pbuf_get_at(p, i);
+        if ((c >= ' ') && (c <= '~'))
+        {
+          dmc_putc(c);
+        }
+      }
+      dmc_putc('\n');
+      dmc_puts(TERMINAL_DEFAULT);
+    }
+
     /* Acknowledge data reception */
     tcp_recved(tpcb, p->tot_len);  
     
@@ -275,11 +390,14 @@ static err_t tcp_echoclient_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p
     tcp_echoclient_connection_close(tpcb, es);
     ret_err = ERR_OK;
   }
-
   /* data received when connection already closed */
   else
   {
     /* Acknowledge data reception */
+#if (TCP_ECHO_CLIENT_DEBUG)
+    dmc_puts("Acknowledge data reception\n");
+#endif
+
     tcp_recved(tpcb, p->tot_len);
     
     /* free pbuf and do nothing */
@@ -300,7 +418,11 @@ static void tcp_echoclient_send(struct tcp_pcb *tpcb, struct echoclient * es)
 {
   struct pbuf *ptr;
   err_t wr_err = ERR_OK;
- 
+
+#if (TCP_ECHO_CLIENT_DEBUG)
+  dmc_puts("tcp_echoclient_send\n");
+#endif
+
   while ((wr_err == ERR_OK) &&
          (es->p_tx != NULL) && 
          (es->p_tx->len <= tcp_sndbuf(tpcb)))
@@ -352,6 +474,10 @@ static err_t tcp_echoclient_poll(void *arg, struct tcp_pcb *tpcb)
   es = (struct echoclient*)arg;
   if (es != NULL)
   {
+#if (TCP_ECHO_CLIENT_DEBUG)
+    dmc_puts("tcp_echoclient_poll\n");
+#endif
+
     if (es->p_tx != NULL)
     {
       /* there is a remaining pbuf (chain) , try to send data */
@@ -392,7 +518,11 @@ static err_t tcp_echoclient_sent(void *arg, struct tcp_pcb *tpcb, u16_t len)
   LWIP_UNUSED_ARG(len);
 
   es = (struct echoclient *)arg;
-  
+
+#if (TCP_ECHO_CLIENT_DEBUG)
+  dmc_puts("tcp_echoclient_sent\n");
+#endif
+
   if(es->p_tx != NULL)
   {
     /* still got pbufs to send */
@@ -410,6 +540,10 @@ static err_t tcp_echoclient_sent(void *arg, struct tcp_pcb *tpcb, u16_t len)
   */
 static void tcp_echoclient_connection_close(struct tcp_pcb *tpcb, struct echoclient * es )
 {
+#if (TCP_ECHO_CLIENT_DEBUG)
+  dmc_puts("tcp_echoclient_connection_close\n");
+#endif
+
   /* remove callbacks */
   tcp_recv(tpcb, NULL);
   tcp_sent(tpcb, NULL);

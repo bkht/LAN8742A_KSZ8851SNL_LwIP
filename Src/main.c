@@ -1555,9 +1555,15 @@ int main(void)
 
   /* TCP echo server Init */
   tcp_echoserver_init();
+  /* UDP echo server Init */
+  udp_echoserver_init();
 
-  tcp_echoclient_connect();
+//  tcp_echoclient_connect();
 
+  /* UDP client connect */
+  udp_echoclient_connect();
+
+  uint8_t client_count = 8;
   /* USER CODE END 2 */
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -1576,7 +1582,18 @@ int main(void)
         DmcLedToggle(LED_RS1_OK);
         dmc_putscr(DMC_I2cRtcGetDateTimeString());
 
-        tcp_echoclient_connect();
+        client_count++;
+        if (client_count >= 10)
+        {
+          client_count = 0;
+
+          /* TCP client connect */
+          tcp_echoclient_connect();
+
+          udp_echoclient_send();
+
+        }
+        SNTP_ObtainTime();
 
       }
       print_time ^= 1;

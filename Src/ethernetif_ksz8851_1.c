@@ -61,12 +61,14 @@
 #include "ethernetif_ksz8851_1.h"
 
 /* Define those to better describe your network interface. */
-#define KSZ8851_IFNAME0_1 'M'
+#define KSZ8851_IFNAME0_1 'm'
 #define KSZ8851_IFNAME1_1 '2'
 
 #define KSZ8851_NET_MTU_1               1500
 
 #define KSZ8851_DEBUG_1                 0
+#define KSZ8851_DEBUG_IN_1              0
+#define KSZ8851_DEBUG_OUT_1             0
 
 uint8_t lwip_buf_1[KSZ8851_NET_MTU_1 * 2];
 
@@ -180,9 +182,9 @@ static err_t low_level_output_KSZ8851_1(struct netif *netif, struct pbuf *p)
 //  initiate transfer();
   
   // Jack 2019-03-28 debug
-#if (KSZ8851_DEBUG_1)
+#if (KSZ8851_DEBUG_OUT_1)
   dmc_puts(TERMINAL_GREEN);
-  dmc_puts("low_level_output_E1\n");
+  dmc_puts("low_level_output_E1 (M2)\n");
   dmc_puts(TERMINAL_DEFAULT);
 #endif
 
@@ -211,9 +213,8 @@ static err_t low_level_output_KSZ8851_1(struct netif *netif, struct pbuf *p)
 
   // Jack Note we need 5 bytes space on the head
 //  tx_len += 5;
-//  tx_len += 5;
-#if (KSZ8851_DEBUG_1)
 
+#if (KSZ8851_DEBUG_OUT_1)
   uint8_t MAC_ST[] = { 0x00, 0x80, 0xe1, 0x00, 0x00, 0x02 };
   uint8_t MAC_PC[] = { 0xb4, 0xb6, 0x86, 0x8e, 0x57, 0xbf };
   uint8_t mark = 0;
@@ -233,6 +234,33 @@ static err_t low_level_output_KSZ8851_1(struct netif *netif, struct pbuf *p)
   {
     mark = 1;
   }
+
+  dmc_puts(TERMINAL_MAGENTA);
+  dmc_puts("E1 M2 ");
+  dmc_putc(netif->name[0]);
+  dmc_putc(netif->name[1]);
+  dmc_putc(' ');
+  dmc_puthex2(netif->hwaddr[0]);
+  dmc_putc(':');
+  dmc_puthex2(netif->hwaddr[1]);
+  dmc_putc(':');
+  dmc_puthex2(netif->hwaddr[2]);
+  dmc_putc(':');
+  dmc_puthex2(netif->hwaddr[3]);
+  dmc_putc(':');
+  dmc_puthex2(netif->hwaddr[4]);
+  dmc_putc(':');
+  dmc_puthex2(netif->hwaddr[5]);
+  dmc_putc(' ');
+  dmc_putint(netif->ip_addr.addr & 0xff);
+  dmc_putc('.');
+  dmc_putint((netif->ip_addr.addr & 0xff00) >> 8);
+  dmc_putc('.');
+  dmc_putint((netif->ip_addr.addr & 0xff0000) >> 16);
+  dmc_putc('.');
+  dmc_putint((netif->ip_addr.addr & 0xff000000) >> 24);
+  dmc_putc('\n');
+  dmc_puts(TERMINAL_DEFAULT);
 
   // Jack 2019-03-28 debug
   for (uint16_t i = 0; i < 34; i++)
@@ -365,10 +393,10 @@ static struct pbuf * low_level_input_KSZ8851_1(struct netif *netif)
 //    return NULL;
 //  }
 
-#if (KSZ8851_DEBUG_1)
-  dmc_puts(TERMINAL_YELLOW);
-  dmc_puts("low_level_input_E1\n");
-  dmc_puts(TERMINAL_DEFAULT);
+#if (KSZ8851_DEBUG_IN_1)
+//  dmc_puts(TERMINAL_YELLOW);
+//  dmc_puts("low_level_input_E1 (M2)\n");
+//  dmc_puts(TERMINAL_DEFAULT);
 #endif
 
   ksz8851snl_reset_rx_1();
@@ -383,8 +411,8 @@ static struct pbuf * low_level_input_KSZ8851_1(struct netif *netif)
     }
   }
 
-#if (KSZ8851_DEBUG_1)
-  uint8_t MAC_ST[] = { 0x00, 0x80, 0xe1, 0x00, 0x00, 0x01 };
+#if (KSZ8851_DEBUG_IN_1)
+  uint8_t MAC_ST[] = { 0x00, 0x80, 0xe1, 0x00, 0x00, 0x02 };
   uint8_t MAC_PC[] = { 0xb4, 0xb6, 0x86, 0x8e, 0x57, 0xbf };
   uint8_t mark = 0;
   if (memcmp(&RxData[0], MAC_ST, 6) == 0)
@@ -405,6 +433,11 @@ static struct pbuf * low_level_input_KSZ8851_1(struct netif *netif)
   }
 
   // Jack 2019-03-28 debug
+  if (mark)
+  {
+    dmc_puts(TERMINAL_YELLOW);
+    dmc_puts("low_level_input_E1 (M2)\n");
+    dmc_puts(TERMINAL_DEFAULT);
   for (uint16_t i = 0; i < 34; i++)
   {
     if ((i < 12) && (mark))
@@ -446,6 +479,7 @@ static struct pbuf * low_level_input_KSZ8851_1(struct netif *netif)
     }
   }
   dmc_putc('\n');
+  }
 #endif
 
 
@@ -531,6 +565,9 @@ void ethernetif_input_KSZ8851_1(struct netif *netif)
   struct pbuf *p;
 
 //  ethernetif = netif->state;
+//  dmc_putc(netif->name[0]);
+//  dmc_putc(netif->name[1]);
+//  dmc_putc('\n');
 
   /* move received packet into a new pbuf */
   p = low_level_input_KSZ8851_1(netif);
@@ -612,13 +649,103 @@ err_t ethernetif_init_KSZ8851_1(struct netif *netif)
    * is available...) */
   netif->output = etharp_output;
   netif->linkoutput = low_level_output_KSZ8851_1;
-  
+
   ethernetif->ethaddr = (struct eth_addr *)&(netif->hwaddr[0]);
-  
+
   /* initialize the hardware */
   low_level_init_KSZ8851_1(netif);
+  
+#if (KSZ8851_DEBUG_1)
+  dmc_puts(TERMINAL_MAGENTA);
+  dmc_puts("Init E1 M2 ");
+  dmc_putc(netif->name[0]);
+  dmc_putc(netif->name[1]);
+  dmc_putc(' ');
+  dmc_puthex2(netif->hwaddr[0]);
+  dmc_putc(':');
+  dmc_puthex2(netif->hwaddr[1]);
+  dmc_putc(':');
+  dmc_puthex2(netif->hwaddr[2]);
+  dmc_putc(':');
+  dmc_puthex2(netif->hwaddr[3]);
+  dmc_putc(':');
+  dmc_puthex2(netif->hwaddr[4]);
+  dmc_putc(':');
+  dmc_puthex2(netif->hwaddr[5]);
+  dmc_putc(' ');
+  dmc_putint(netif->ip_addr.addr & 0xff);
+  dmc_putc('.');
+  dmc_putint((netif->ip_addr.addr & 0xff00) >> 8);
+  dmc_putc('.');
+  dmc_putint((netif->ip_addr.addr & 0xff0000) >> 16);
+  dmc_putc('.');
+  dmc_putint((netif->ip_addr.addr & 0xff000000) >> 24);
+  dmc_puts(TERMINAL_DEFAULT);
+#endif
 
   return ERR_OK;
+}
+
+/**
+  * @brief
+  * @retval None
+  */
+void ethernet_link_check_state_KSZ8851_1(struct netif *netif)
+{
+  ETH_MACConfigTypeDef MACConf;
+  uint32_t PHYLinkState;
+  uint32_t linkchanged = 0, speed = 0, duplex =0;
+
+//  dmc_puts("ethernet_link_check_state\n");
+
+  PHYLinkState = KSZ8851_1_GetLinkState();
+
+  if(netif_is_link_up(netif) && (PHYLinkState <= KSZ8851_1_STATUS_LINK_DOWN))
+  {
+//    HAL_ETH_Stop(&heth);
+    netif_set_down(netif);
+    netif_set_link_down(netif);
+  }
+  else if(!netif_is_link_up(netif) && (PHYLinkState > KSZ8851_1_STATUS_LINK_DOWN))
+  {
+    switch (PHYLinkState)
+    {
+    case KSZ8851_1_STATUS_100MBITS_FULLDUPLEX:
+      duplex = ETH_FULLDUPLEX_MODE;
+      speed = ETH_SPEED_100M;
+      linkchanged = 1;
+      break;
+    case KSZ8851_1_STATUS_100MBITS_HALFDUPLEX:
+      duplex = ETH_HALFDUPLEX_MODE;
+      speed = ETH_SPEED_100M;
+      linkchanged = 1;
+      break;
+    case KSZ8851_1_STATUS_10MBITS_FULLDUPLEX:
+      duplex = ETH_FULLDUPLEX_MODE;
+      speed = ETH_SPEED_10M;
+      linkchanged = 1;
+      break;
+    case KSZ8851_1_STATUS_10MBITS_HALFDUPLEX:
+      duplex = ETH_HALFDUPLEX_MODE;
+      speed = ETH_SPEED_10M;
+      linkchanged = 1;
+      break;
+    default:
+      break;
+    }
+
+    if(linkchanged)
+    {
+      /* Get MAC Config MAC */
+//      HAL_ETH_GetMACConfig(&heth, &MACConf);
+      MACConf.DuplexMode = duplex;
+      MACConf.Speed = speed;
+//      HAL_ETH_SetMACConfig(&heth, &MACConf);
+//      HAL_ETH_Start(&heth);
+      netif_set_up(netif);
+      netif_set_link_up(netif);
+    }
+  }
 }
 
 //#endif /* 0 */

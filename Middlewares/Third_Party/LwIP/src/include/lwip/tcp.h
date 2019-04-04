@@ -393,6 +393,8 @@ err_t            tcp_bind    (struct tcp_pcb *pcb, const ip_addr_t *ipaddr,
                               u16_t port);
 err_t            tcp_connect (struct tcp_pcb *pcb, const ip_addr_t *ipaddr,
                               u16_t port, tcp_connected_fn connected);
+err_t            tcp_connect_by_name(const char *name, struct tcp_pcb *pcb, const ip_addr_t *ipaddr,
+                              u16_t port, tcp_connected_fn connected);
 
 struct tcp_pcb * tcp_listen_with_backlog_and_err(struct tcp_pcb *pcb, u8_t backlog, err_t *err);
 struct tcp_pcb * tcp_listen_with_backlog(struct tcp_pcb *pcb, u8_t backlog);

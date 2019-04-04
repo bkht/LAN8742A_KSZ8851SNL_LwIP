@@ -44,6 +44,19 @@
 
 #define LAN8742_DEBUG_1                 0
 
+/**
+ * MAC address to use.
+ */
+static uint8_t gs_uc_mac_address_LAN8742[] =
+{
+  LAN8742_ETHERNET_CONF_ETHADDR0,
+  LAN8742_ETHERNET_CONF_ETHADDR1,
+  LAN8742_ETHERNET_CONF_ETHADDR2,
+  LAN8742_ETHERNET_CONF_ETHADDR3,
+  LAN8742_ETHERNET_CONF_ETHADDR4,
+  LAN8742_ETHERNET_CONF_ETHADDR5
+};
+
 /* USER CODE BEGIN 1 */
 
 /* USER CODE END 1 */
@@ -251,15 +264,8 @@ static void low_level_init(struct netif *netif)
   
   /* Init ETH */
 
-  uint8_t MACAddr[6] ;
   heth.Instance = ETH;
-  MACAddr[0] = 0x00;
-  MACAddr[1] = 0x80;
-  MACAddr[2] = 0xE1;
-  MACAddr[3] = 0x00;
-  MACAddr[4] = 0x00;
-  MACAddr[5] = 0x00;
-  heth.Init.MACAddr = &MACAddr[0];
+  heth.Init.MACAddr = &gs_uc_mac_address_LAN8742[0];
   heth.Init.MediaInterface = HAL_ETH_RMII_MODE;
   heth.Init.TxDesc = DMATxDscrTab;
   heth.Init.RxDesc = DMARxDscrTab;
@@ -291,12 +297,12 @@ static void low_level_init(struct netif *netif)
   netif->hwaddr_len = ETH_HWADDR_LEN;
   
   /* set MAC hardware address */
-  netif->hwaddr[0] =  heth.Init.MACAddr[0];
-  netif->hwaddr[1] =  heth.Init.MACAddr[1];
-  netif->hwaddr[2] =  heth.Init.MACAddr[2];
-  netif->hwaddr[3] =  heth.Init.MACAddr[3];
-  netif->hwaddr[4] =  heth.Init.MACAddr[4];
-  netif->hwaddr[5] =  heth.Init.MACAddr[5];
+  netif->hwaddr[0] = heth.Init.MACAddr[0];
+  netif->hwaddr[1] = heth.Init.MACAddr[1];
+  netif->hwaddr[2] = heth.Init.MACAddr[2];
+  netif->hwaddr[3] = heth.Init.MACAddr[3];
+  netif->hwaddr[4] = heth.Init.MACAddr[4];
+  netif->hwaddr[5] = heth.Init.MACAddr[5];
   
   /* maximum transfer unit */
   netif->mtu = 1500;
@@ -605,6 +611,9 @@ void ethernetif_input(struct netif *netif)
   struct pbuf *p;
 
 //	dmc_puts("ethernetif_input\n");
+//  dmc_putc(netif->name[0]);
+//  dmc_putc(netif->name[1]);
+//  dmc_putc('\n');
 
   /* move received packet into a new pbuf */
   p = low_level_input(netif);
@@ -627,7 +636,7 @@ void ethernetif_input(struct netif *netif)
 
 /* USER CODE BEGIN 8 */
 /**
-  * @brief  This function notify user about link status changement.
+  * @brief  This function notify user about link status change.
   * @param  netif: the network interface
   * @retval None
   */

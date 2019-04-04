@@ -1078,7 +1078,7 @@ uint8_t ksz8851_get_spi_state_0(SPI_HandleTypeDef *hspi)
 	{
 	case HAL_SPI_STATE_READY:
 	{
-		spiIntCode = INT_SPI_READY;
+		spiIntCode = INT_SPI_READY_0;
 		break;
 	}
 	case HAL_SPI_STATE_BUSY:
@@ -1086,7 +1086,7 @@ uint8_t ksz8851_get_spi_state_0(SPI_HandleTypeDef *hspi)
 	case HAL_SPI_STATE_BUSY_RX:
 	case HAL_SPI_STATE_BUSY_TX_RX:
 	{
-		spiIntCode = INT_SPI_BUSY;
+		spiIntCode = INT_SPI_BUSY_0;
 		break;
 	}
 	case HAL_SPI_STATE_ERROR:
@@ -3566,4 +3566,42 @@ void wait_dma_rx_ended_0(void)
 {
   dmc_puts("wait_dma_rx_ended_0\n");
   while (dma_rx_ended_0 != 1);
+}
+
+uint32_t KSZ8851_0_GetLinkState(void)
+{
+  uint32_t state = KSZ8851_0_STATUS_LINK_DOWN;
+
+  uint16_t phy_stat = ksz8851_reg_read_0(REG_PHY_STATUS);
+
+  if (phy_stat & PHY_LINK_UP)
+  {
+    state = KSZ8851_0_STATUS_OK;
+  }
+  if (phy_stat & PHY_100BTX_FD_CAPABLE)
+  {
+    state = KSZ8851_0_STATUS_100MBITS_FULLDUPLEX;
+  }
+  if (phy_stat & PHY_100BTX_CAPABLE)
+  {
+    state = KSZ8851_0_STATUS_100MBITS_HALFDUPLEX;
+  }
+  if (phy_stat & PHY_10BT_FD_CAPABLE)
+  {
+    state = KSZ8851_0_STATUS_10MBITS_FULLDUPLEX;
+  }
+  if (phy_stat & PHY_10BT_CAPABLE)
+  {
+    state = KSZ8851_0_STATUS_10MBITS_HALFDUPLEX;
+  }
+  if (phy_stat & PHY_AUTO_NEG_CAPABLE)
+  {
+    state = KSZ8851_0_STATUS_100MBITS_FULLDUPLEX;
+  }
+  if (phy_stat & PHY_AUTO_NEG_ACKNOWLEDGE)
+  {
+    state = KSZ8851_0_STATUS_100MBITS_FULLDUPLEX;
+  }
+
+  return state;
 }

@@ -62,6 +62,9 @@
 
 #include <string.h>
 
+
+#define TCP_DEBUG                 0
+
 #ifdef LWIP_HOOK_FILENAME
 #include LWIP_HOOK_FILENAME
 #endif
@@ -891,6 +894,7 @@ tcp_connect(struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port,
   ip_addr_set(&pcb->remote_ip, ipaddr);
   pcb->remote_port = port;
 
+#if (TCP_DEBUG)
 //  dmc_putint((pcb->local_ip.addr & 0xff));
 //  dmc_putc('.');
 //  dmc_putint((pcb->local_ip.addr & 0xff00) >> 8);
@@ -899,13 +903,32 @@ tcp_connect(struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port,
 //  dmc_putc('.');
 //  dmc_putint((pcb->local_ip.addr & 0xff000000) >> 24);
 //  dmc_putc('\n');
+#endif
 
   /* check if we have a route to the remote host */
   if (ip_addr_isany(&pcb->local_ip)) {
     /* no local IP address set, yet. */
     struct netif *netif;
+
+//    netif = gnetif0;
+
     const ip_addr_t *local_ip;
+//    ip_addr_t *local_ip;
+//    local_ip->addr = 192 | (168 << 8) | (25 << 16) || (234 << 24);
+//    pcb->local_ip.addr = 192 | (168 << 8) | (25 << 16) || (232 << 24);
+//    netif->ip_addr.addr = 192 | (168 << 8) | (25 << 16) || (232 << 24);
+
+    // Jack 01-04-2019 original line
     ip_route_get_local_ip(&pcb->local_ip, &pcb->remote_ip, netif, local_ip);
+
+//    do {
+//      netif = ip_route(&pcb->local_ip, &pcb->remote_ip);
+
+//      netif = ip4_route_by_name("m2", &pcb->remote_ip);
+//      local_ip = ip_netif_get_local_ip(netif, &pcb->remote_ip);
+//    } while(0);
+
+
     if ((netif == NULL) || (local_ip == NULL)) {
       /* Don't even try to send a SYN packet if we have no route
          since that will fail. */
@@ -914,18 +937,212 @@ tcp_connect(struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port,
     /* Use the address as local address of the pcb. */
     ip_addr_copy(pcb->local_ip, *local_ip);
   }
-  //    local_ip->addr = 192 | (168 << 8) | (25 << 16) || (232 << 24);
 
-  dmc_putint((pcb->local_ip.addr & 0xff));
-  dmc_putc('.');
-  dmc_putint((pcb->local_ip.addr & 0xff00) >> 8);
-  dmc_putc('.');
-  dmc_putint((pcb->local_ip.addr & 0xff0000) >> 16);
-  dmc_putc('.');
-  dmc_putint((pcb->local_ip.addr & 0xff000000) >> 24);
-  dmc_putc('\n');
+#if (TCP_DEBUG)
+//  dmc_putint((pcb->local_ip.addr & 0xff));
+//  dmc_putc('.');
+//  dmc_putint((pcb->local_ip.addr & 0xff00) >> 8);
+//  dmc_putc('.');
+//  dmc_putint((pcb->local_ip.addr & 0xff0000) >> 16);
+//  dmc_putc('.');
+//  dmc_putint((pcb->local_ip.addr & 0xff000000) >> 24);
+//  dmc_putc('\n');
+#endif
 
-//  pcb->local_ip.addr = 192 | (168 << 8) | (25 << 16) || (232 << 24);
+  old_local_port = pcb->local_port;
+  if (pcb->local_port == 0) {
+    pcb->local_port = tcp_new_port();
+    if (pcb->local_port == 0) {
+      return ERR_BUF;
+    }
+  } else {
+#if SO_REUSE
+    if (ip_get_option(pcb, SOF_REUSEADDR)) {
+      /* Since SOF_REUSEADDR allows reusing a local address, we have to make sure
+         now that the 5-tuple is unique. */
+      struct tcp_pcb *cpcb;
+      int i;
+      /* Don't check listen- and bound-PCBs, check active- and TIME-WAIT PCBs. */
+      for (i = 2; i < NUM_TCP_PCB_LISTS; i++) {
+        for (cpcb = *tcp_pcb_lists[i]; cpcb != NULL; cpcb = cpcb->next) {
+          if ((cpcb->local_port == pcb->local_port) &&
+              (cpcb->remote_port == port) &&
+              ip_addr_cmp(&cpcb->local_ip, &pcb->local_ip) &&
+              ip_addr_cmp(&cpcb->remote_ip, ipaddr)) {
+            /* linux returns EISCONN here, but ERR_USE should be OK for us */
+            return ERR_USE;
+          }
+        }
+      }
+    }
+#endif /* SO_REUSE */
+  }
+
+  iss = tcp_next_iss(pcb);
+  pcb->rcv_nxt = 0;
+  pcb->snd_nxt = iss;
+  pcb->lastack = iss - 1;
+  pcb->snd_wl2 = iss - 1;
+  pcb->snd_lbb = iss - 1;
+  /* Start with a window that does not need scaling. When window scaling is
+     enabled and used, the window is enlarged when both sides agree on scaling. */
+  pcb->rcv_wnd = pcb->rcv_ann_wnd = TCPWND_MIN16(TCP_WND);
+  pcb->rcv_ann_right_edge = pcb->rcv_nxt;
+  pcb->snd_wnd = TCP_WND;
+  /* As initial send MSS, we use TCP_MSS but limit it to 536.
+     The send MSS is updated when an MSS option is received. */
+  pcb->mss = INITIAL_MSS;
+#if TCP_CALCULATE_EFF_SEND_MSS
+  pcb->mss = tcp_eff_send_mss(pcb->mss, &pcb->local_ip, &pcb->remote_ip);
+#endif /* TCP_CALCULATE_EFF_SEND_MSS */
+  pcb->cwnd = 1;
+#if LWIP_CALLBACK_API
+  pcb->connected = connected;
+#else /* LWIP_CALLBACK_API */
+  LWIP_UNUSED_ARG(connected);
+#endif /* LWIP_CALLBACK_API */
+
+  /* Send a SYN together with the MSS option. */
+  ret = tcp_enqueue_flags(pcb, TCP_SYN);
+  if (ret == ERR_OK) {
+    /* SYN segment was enqueued, changed the pcbs state now */
+    pcb->state = SYN_SENT;
+    if (old_local_port != 0) {
+      TCP_RMV(&tcp_bound_pcbs, pcb);
+    }
+    TCP_REG_ACTIVE(pcb);
+    MIB2_STATS_INC(mib2.tcpactiveopens);
+
+    tcp_output(pcb);
+  }
+  return ret;
+}
+
+
+/**
+ * @ingroup tcp_raw
+ * Connects to another host. The function given as the "connected"
+ * argument will be called when the connection has been established.
+ *
+ * @param pcb the tcp_pcb used to establish the connection
+ * @param ipaddr the remote ip address to connect to
+ * @param port the remote tcp port to connect to
+ * @param connected callback function to call when connected (on error,
+                    the err calback will be called)
+ * @return ERR_VAL if invalid arguments are given
+ *         ERR_OK if connect request has been sent
+ *         other err_t values if connect request couldn't be sent
+ */
+err_t
+tcp_connect_by_name(const char *name, struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port,
+      tcp_connected_fn connected)
+{
+  err_t ret;
+  u32_t iss;
+  u16_t old_local_port;
+
+  if ((pcb == NULL) || (ipaddr == NULL)) {
+    return ERR_VAL;
+  }
+
+  LWIP_ERROR("tcp_connect: can only connect from state CLOSED", pcb->state == CLOSED, return ERR_ISCONN);
+
+  LWIP_DEBUGF(TCP_DEBUG, ("tcp_connect to port %"U16_F"\n", port));
+  ip_addr_set(&pcb->remote_ip, ipaddr);
+  pcb->remote_port = port;
+
+#if (TCP_DEBUG)
+//  dmc_putint((pcb->local_ip.addr & 0xff));
+//  dmc_putc('.');
+//  dmc_putint((pcb->local_ip.addr & 0xff00) >> 8);
+//  dmc_putc('.');
+//  dmc_putint((pcb->local_ip.addr & 0xff0000) >> 16);
+//  dmc_putc('.');
+//  dmc_putint((pcb->local_ip.addr & 0xff000000) >> 24);
+//  dmc_putc('\n');
+#endif
+
+  /* check if we have a route to the remote host */
+  if (ip_addr_isany(&pcb->local_ip)) {
+    /* no local IP address set, yet. */
+    struct netif *netif;
+
+//    netif = gnetif0;
+
+    const ip_addr_t *local_ip;
+//    ip_addr_t *local_ip;
+//    local_ip->addr = 192 | (168 << 8) | (25 << 16) || (234 << 24);
+//    pcb->local_ip.addr = 192 | (168 << 8) | (25 << 16) || (232 << 24);
+//    netif->ip_addr.addr = 192 | (168 << 8) | (25 << 16) || (232 << 24);
+
+    // Jack 01-04-2019 original line
+//    ip_route_get_local_ip(&pcb->local_ip, &pcb->remote_ip, netif, local_ip);
+
+//    do {
+//      netif = ip_route(&pcb->local_ip, &pcb->remote_ip);
+
+    netif = ip4_route_by_name(name, &pcb->remote_ip);
+    local_ip = ip_netif_get_local_ip(netif, &pcb->remote_ip);
+//    } while(0);
+
+#if (TCP_DEBUG)
+    dmc_puts("tcp_connect_by_name ");
+    dmc_putc(netif->name[0]);
+    dmc_putc(netif->name[1]);
+    dmc_putc(' ');
+
+    dmc_puthex2(netif->hwaddr[0]);
+    dmc_putc(':');
+    dmc_puthex2(netif->hwaddr[1]);
+    dmc_putc(':');
+    dmc_puthex2(netif->hwaddr[2]);
+    dmc_putc(':');
+    dmc_puthex2(netif->hwaddr[3]);
+    dmc_putc(':');
+    dmc_puthex2(netif->hwaddr[4]);
+    dmc_putc(':');
+    dmc_puthex2(netif->hwaddr[5]);
+    dmc_putc(' ');
+
+    dmc_putint(netif->ip_addr.addr & 0xff);
+    dmc_putc('.');
+    dmc_putint((netif->ip_addr.addr & 0xff00) >> 8);
+    dmc_putc('.');
+    dmc_putint((netif->ip_addr.addr & 0xff0000) >> 16);
+    dmc_putc('.');
+    dmc_putint((netif->ip_addr.addr & 0xff000000) >> 24);
+
+    dmc_putc(' ');
+    dmc_putint(local_ip->addr & 0xff);
+    dmc_putc('.');
+    dmc_putint((local_ip->addr & 0xff00) >> 8);
+    dmc_putc('.');
+    dmc_putint((local_ip->addr & 0xff0000) >> 16);
+    dmc_putc('.');
+    dmc_putint((local_ip->addr & 0xff000000) >> 24);
+
+    dmc_putc('\n');
+#endif
+
+    if ((netif == NULL) || (local_ip == NULL)) {
+      /* Don't even try to send a SYN packet if we have no route
+         since that will fail. */
+      return ERR_RTE;
+    }
+    /* Use the address as local address of the pcb. */
+    ip_addr_copy(pcb->local_ip, *local_ip);
+  }
+
+#if (TCP_DEBUG)
+//  dmc_putint((pcb->local_ip.addr & 0xff));
+//  dmc_putc('.');
+//  dmc_putint((pcb->local_ip.addr & 0xff00) >> 8);
+//  dmc_putc('.');
+//  dmc_putint((pcb->local_ip.addr & 0xff0000) >> 16);
+//  dmc_putc('.');
+//  dmc_putint((pcb->local_ip.addr & 0xff000000) >> 24);
+//  dmc_putc('\n');
+#endif
 
   old_local_port = pcb->local_port;
   if (pcb->local_port == 0) {
