@@ -337,8 +337,8 @@ int main(void)
 //  MX_FDCAN2_Init();
   dmc_puts("MX_I2C4_Init\n");
   MX_I2C4_Init();
-//  dmc_puts("MX_RTC_Init\n");
-//  MX_RTC_Init();
+  dmc_puts("MX_RTC_Init\n");
+  MX_RTC_Init();
 //  dmc_puts("MX_CRYP_Init\n");
 //  MX_CRYP_Init();
 //  dmc_puts("MX_HASH_Init\n");
@@ -385,26 +385,30 @@ int main(void)
   uint32_t SystemCoreClockMHz = SystemCoreClock / 1000000;
   dmc_putstrintstr("SystemCoreClock: ", SystemCoreClockMHz, " MHz\n");     // 400000000 Hz
 
+
+  DMC_McuRtcSetTimeOffset(7200);
+  DMC_I2cRtcSetTimeOffset(7200);
+
   DMC_I2cRtcInit(hi2c4);
 
   // RTC
   char * DaysOfWeek[] = { "", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
 
-  struct DMC_MCU_RTC_DATE_TIME DateTime;
-  DateTime.Second = 50;
-  DateTime.Minute = 18;
-  DateTime.Hour   = 07;
-  DateTime.DayOfMonth = 18;
-  DateTime.Month = 3;
-  DateTime.Year = 19;
-  DateTime.DayOfWeek = 0; // Not required when setting date, it gets calculated anyway
-
-  // Set RTC
-  uint8_t SetDateTime = 1;
-  if (SetDateTime)
-  {
-    DMC_I2cRtcSetDateTime(&DateTime);
-  }
+//  struct DMC_MCU_RTC_DATE_TIME DateTime;
+//  DateTime.Second = 50;
+//  DateTime.Minute = 18;
+//  DateTime.Hour   = 07;
+//  DateTime.DayOfMonth = 18;
+//  DateTime.Month = 3;
+//  DateTime.Year = 19;
+//  DateTime.DayOfWeek = 0; // Not required when setting date, it gets calculated anyway
+//
+//  // Set RTC
+//  uint8_t SetDateTime = 1;
+//  if (SetDateTime)
+//  {
+//    DMC_I2cRtcSetDateTime(&DateTime);
+//  }
 
 
 //  for (uint8_t i = 0; i < 5; i++)

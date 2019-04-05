@@ -22,6 +22,8 @@ uint8_t DMC_I2cRtcEepromDataArray[EEPROM_SIZE];
 uint8_t DMC_I2cRtcEepromDataLocation = 0;
 uint8_t DMC_I2cRtcEepromDataLength = 0;
 
+uint32_t DMC_I2cRtcTimeOffset = 0;
+
 //    typedef long int __time_t;
 typedef __time_t time_t;
 
@@ -92,6 +94,180 @@ void DMC_I2cRtcInit(I2C_HandleTypeDef hi2c)
 	DMC_I2cRtcSquareWave(SQWAVE_1_HZ);
 	DMC_I2cRtcEepromWriteRequested = FALSE;
 	DMC_I2cRtcEepromWriteResetTickCounter();
+}
+
+void DMC_I2cRtcSetTimeOffset(uint32_t offset)
+{
+  DMC_I2cRtcTimeOffset = offset;
+}
+
+uint32_t DMC_I2cRtcGetTimeOffset(void)
+{
+  return DMC_I2cRtcTimeOffset;
+}
+
+
+// Convert epoch time to Date/Time structures
+// RTC_FromEpoch(ts + 3600, &currentTime, &currentDate);
+// RTC_TimeTypeDef currentTime;
+// RTC_DateTypeDef currentDate;
+// time_t timestamp;
+// struct tm currTime;
+void DMC_I2cRtcFromEpoch(uint32_t epoch, RTC_TimeTypeDef *time, RTC_DateTypeDef *date)
+{
+//  RTC_TimeTypeDef sTime;
+//  RTC_DateTypeDef sDate;
+
+//  dmc_puts("DMC_McuRtcFromEpoch: ");
+//  dmc_putintcr(epoch);
+
+  uint32_t tm;
+  uint32_t t1;
+  uint32_t a;
+  uint32_t b;
+  uint32_t c;
+  uint32_t d;
+  uint32_t e;
+  uint32_t m;
+  int16_t year = 0;
+  int16_t month = 0;
+  int16_t dow = 0;
+  int16_t mday = 0;
+  int16_t hour = 0;
+  int16_t min = 0;
+  int16_t sec = 0;
+  uint64_t JD = 0;
+  uint64_t JDN = 0;
+
+  // These hardcore math's are taken from http://en.wikipedia.org/wiki/Julian_day
+
+  JD = ((epoch + 43200) / (86400 >> 1)) + (2440587 << 1) + 1;
+  JDN = JD >> 1;
+
+  tm = epoch;
+  t1 = tm / 60;
+  sec = tm - (t1 * 60);
+  tm = t1;
+  t1 = tm / 60;
+  min = tm - (t1 * 60);
+  tm = t1;
+  t1 = tm / 24;
+  hour = tm - (t1 * 24);
+
+  dow = JDN % 7;
+  a = JDN + 32044;
+  b = ((4 * a) + 3) / 146097;
+  c = a - ((146097 * b) / 4);
+  d = ((4 * c) + 3) / 1461;
+  e = c - ((1461 * d) / 4);
+  m = ((5 * e) + 2) / 153;
+  mday = e - (((153 * m) + 2) / 5) + 1;
+  month = m + 3 - (12 * (m / 10));
+  year = (100 * b) + d - 4800 + (m / 10);
+
+  date->Year = year - 2000;
+  date->Month = month;
+  date->Date = mday;
+  date->WeekDay = dow;
+  time->Hours = hour;
+  time->Minutes = min;
+  time->Seconds = sec;
+}
+
+void DMC_I2cRtcSetRtcFromEpoch(uint32_t epoch)
+{
+  RTC_TimeTypeDef sTime;
+  RTC_DateTypeDef sDate;
+
+  DMC_McuRtcFromEpoch(epoch + DMC_I2cRtcTimeOffset, &sTime, &sDate);
+
+  dmc_puts("DMC_I2cRtcSetRtcFromEpoch: ");
+  dmc_putint(sDate.WeekDay);
+  dmc_puts(" ");
+  dmc_putint2(sDate.Date, '0');
+  dmc_puts("-");
+  dmc_putint2(sDate.Month, '0');
+  dmc_puts("-");
+  dmc_putint2(sDate.Year, '0');
+  dmc_puts(" ");
+  dmc_putint2(sTime.Hours, '0');
+  dmc_puts(":");
+  dmc_putint2(sTime.Minutes, '0');
+  dmc_puts(":");
+  dmc_putint2(sTime.Seconds, '0');
+  dmc_putcr();
+
+  DMC_I2cRtcSetDateAndTime(&sTime, &sDate);
+}
+
+void DMC_I2cRtcSetDateAndTime(RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate)
+{
+  uint8_t buf[8];
+//  sDate->WeekDay = DMC_I2cRtcGetDayOfWeek(sDate->Date, sDate->Month, sDate->Year);     // 1-7
+
+//  uint8_t noOfDaysInMonth = DMC_I2cRtcGetNoOfDaysInMonth((uint16_t) sDate->Year, sDate->Month);
+//  if (sDate->Date > noOfDaysInMonth)
+//  {
+//    sDate->Date = noOfDaysInMonth;
+//  }
+
+  dmc_puts("DMC_I2cRtcSetDateAndTime: ");
+  dmc_putint(sDate->WeekDay);
+  dmc_puts(" ");
+  dmc_putint2(sDate->Date, '0');
+  dmc_puts("-");
+  dmc_putint2(sDate->Month, '0');
+  dmc_puts("-");
+  dmc_putint2(sDate->Year, '0');
+  dmc_puts(" ");
+  dmc_putint2(sTime->Hours, '0');
+  dmc_puts(":");
+  dmc_putint2(sTime->Minutes, '0');
+  dmc_puts(":");
+  dmc_putint2(sTime->Seconds, '0');
+  dmc_putcr();
+
+//  printf("%d %02d-%02d-20%02d %02d:%02d:%02d\n", dayOfWeek, dayOfMonth, month, year, hour, minute, second);
+
+  buf[0] = RTC_LOCATION;
+  buf[1] = DMC_I2cRtcDecToBcd(sTime->Seconds) & 0x7f; // set seconds and disable clock (01111111, Bit 7, ST = 0)
+  buf[2] = DMC_I2cRtcDecToBcd(sTime->Minutes) & 0x7f;               // set minutes (01111111)
+  buf[3] = DMC_I2cRtcDecToBcd(sTime->Hours) & 0x3f; // set hours and to 24hr format (00111111, Bit 6 = 0)
+  buf[4] = _BV(VBATEN) | (DMC_I2cRtcDecToBcd(sDate->WeekDay) & 0x07); // set the day and enable battery backup (00000111)|(00001000, Bit 3 = 1)
+  buf[5] = DMC_I2cRtcDecToBcd(sDate->Date) & 0x3f;    // set the date in month (00111111)
+  buf[6] = DMC_I2cRtcDecToBcd(sDate->Month) & 0x1f;                // set the month (00011111)
+  buf[7] = DMC_I2cRtcDecToBcd(sDate->Year);                        // set the year (11111111)
+  uint8_t w1 = DMC_I2cRtcRegisterWrite(_address_RTC, buf, 8);
+
+  // Start Clock:
+  buf[0] = RTC_LOCATION;
+  buf[1] = _BV(ST) | DMC_I2cRtcDecToBcd(sTime->Seconds); // set seconds and enable clock (10000000)
+  uint8_t w2 = DMC_I2cRtcRegisterWrite(_address_RTC, buf, 2);
+
+  _error = ((w1 != 0) || (w2 != 0));
+}
+
+// Get the date/time
+//void RTC_GetRtcDateTime(uint8_t *second, uint8_t *minute, uint8_t *hour, uint8_t *dayOfWeek, uint8_t *dayOfMonth,
+//    uint8_t *month, uint8_t *year)
+void DMC_I2cRtcGetDateAndTime(RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate)
+{
+  uint8_t buf[8];
+
+  buf[0] = RTC_LOCATION;
+  int w = DMC_I2cRtcRegisterWrite(_address_RTC, buf, 1);
+  int r = DMC_I2cRtcRegisterRead(_address_RTC, buf, 7);
+
+  _error = ((w != 0) || (r != 0));
+
+  // A few of these need masks because certain bits are control bits
+  sTime->Seconds = DMC_I2cRtcBcdToDec(buf[0] & 0x7f);  // 01111111 0-59
+  sTime->Minutes = DMC_I2cRtcBcdToDec(buf[1] & 0x7f);  // 01111111 0-59
+  sTime->Hours = DMC_I2cRtcBcdToDec(buf[2] & 0x3f);  // 00111111 1-23
+//  DateTime->DayOfWeek = RTC_BcdToDec(buf[3] & 0x07);  // 00000111 1-7
+  sDate->Date = DMC_I2cRtcBcdToDec(buf[4] & 0x3f);  // 00111111 1-31
+  sDate->Month = DMC_I2cRtcBcdToDec(buf[5] & 0x1f);  // 00011111 1-12
+  sDate->Year = DMC_I2cRtcBcdToDec(buf[6]);         // 11111111 0-99
 }
 
 // Functions used to communicate with those devices that do not have a secondary address,

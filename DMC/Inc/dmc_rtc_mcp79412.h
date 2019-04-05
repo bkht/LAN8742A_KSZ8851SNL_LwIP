@@ -261,6 +261,12 @@ uint32_t DMC_I2cRtcGetSysTick(void);
 
 void DMC_I2cRtcSetI2cHandle(I2C_HandleTypeDef hi2c);
 void DMC_I2cRtcInit(I2C_HandleTypeDef hi2c);
+void DMC_I2cRtcSetTimeOffset(uint32_t offset);
+uint32_t DMC_I2cRtcGetTimeOffset(void);
+void DMC_I2cRtcFromEpoch(uint32_t epoch, RTC_TimeTypeDef *time, RTC_DateTypeDef *date);
+void DMC_I2cRtcSetRtcFromEpoch(uint32_t epoch);
+void DMC_I2cRtcSetDateAndTime(RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate);
+void DMC_I2cRtcGetDateAndTime(RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate);
 
 uint8_t DMC_I2cRtcRegisterWrite(uint16_t address, uint8_t *data, uint16_t length);
 uint8_t DMC_I2cRtcRegisterRead(uint16_t address, uint8_t *data, uint16_t length);

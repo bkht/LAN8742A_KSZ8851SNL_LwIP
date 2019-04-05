@@ -27,8 +27,15 @@ struct DMC_MCU_RTC_DATE_TIME
 };
 
 void DMC_McuRtcInit(void);
+void DMC_SetTimeOffset(uint32_t offset);
+uint32_t DMC_GetTimeOffset(void);
+void DMC_McuRtcFromEpoch(uint32_t epoch, RTC_TimeTypeDef *time, RTC_DateTypeDef *date);
+void DMC_McuRtcSetRtcFromEpoch(uint32_t epoch);
+void DMC_McuRtcShowRtc(void);
+
 void DMC_McuRtcSetDateTime(struct DMC_MCU_RTC_DATE_TIME *DateTime);
 void DMC_McuRtcGetDateTime(struct DMC_MCU_RTC_DATE_TIME *DateTime);
+void DMC_McuRtcGetDateAndTime(RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate);
 void DMC_McuRtcSetAlarmA(struct DMC_MCU_RTC_DATE_TIME *DateTime);
 void DMC_McuRtcSetAlarmB(struct DMC_MCU_RTC_DATE_TIME *DateTime);
 void DMC_McuRtcDisableAlarmA(void);

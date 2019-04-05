@@ -12,6 +12,8 @@ time_t timestamp;
 struct tm currTime;
 char DmcRtcDriverDateTimeString[24];	// 2018-11-14 11:20:33 20 positions with termination character
 
+uint32_t DMC_McuRtcTimeOffset = 0;
+
 //struct DMC_MCU_RTC_DATE_TIME DMC_RTC_DateTime;
 
 void DMC_McuRtcInit(void)
@@ -31,6 +33,128 @@ void DMC_McuRtcInit(void)
 //	{
 //		dmc_puts("OK\n");
 //	}
+}
+
+void DMC_McuRtcSetTimeOffset(uint32_t offset)
+{
+  DMC_McuRtcTimeOffset = offset;
+}
+
+uint32_t DMC_McuRtcGetTimeOffset(void)
+{
+  return DMC_McuRtcTimeOffset;
+}
+
+// Convert epoch time to Date/Time structures
+// RTC_FromEpoch(ts + 3600, &currentTime, &currentDate);
+// RTC_TimeTypeDef currentTime;
+// RTC_DateTypeDef currentDate;
+// time_t timestamp;
+// struct tm currTime;
+void DMC_McuRtcFromEpoch(uint32_t epoch, RTC_TimeTypeDef *time, RTC_DateTypeDef *date)
+{
+//  RTC_TimeTypeDef sTime;
+//  RTC_DateTypeDef sDate;
+
+//  dmc_puts("DMC_McuRtcFromEpoch: ");
+//  dmc_putintcr(epoch);
+
+  uint32_t tm;
+  uint32_t t1;
+  uint32_t a;
+  uint32_t b;
+  uint32_t c;
+  uint32_t d;
+  uint32_t e;
+  uint32_t m;
+  int16_t year = 0;
+  int16_t month = 0;
+  int16_t dow = 0;
+  int16_t mday = 0;
+  int16_t hour = 0;
+  int16_t min = 0;
+  int16_t sec = 0;
+  uint64_t JD = 0;
+  uint64_t JDN = 0;
+
+  // These hardcore math's are taken from http://en.wikipedia.org/wiki/Julian_day
+
+  JD = ((epoch + 43200) / (86400 >> 1)) + (2440587 << 1) + 1;
+  JDN = JD >> 1;
+
+  tm = epoch;
+  t1 = tm / 60;
+  sec = tm - (t1 * 60);
+  tm = t1;
+  t1 = tm / 60;
+  min = tm - (t1 * 60);
+  tm = t1;
+  t1 = tm / 24;
+  hour = tm - (t1 * 24);
+
+  dow = JDN % 7;
+  a = JDN + 32044;
+  b = ((4 * a) + 3) / 146097;
+  c = a - ((146097 * b) / 4);
+  d = ((4 * c) + 3) / 1461;
+  e = c - ((1461 * d) / 4);
+  m = ((5 * e) + 2) / 153;
+  mday = e - (((153 * m) + 2) / 5) + 1;
+  month = m + 3 - (12 * (m / 10));
+  year = (100 * b) + d - 4800 + (m / 10);
+
+  date->Year = year - 2000;
+  date->Month = month;
+  date->Date = mday;
+  date->WeekDay = dow;
+  time->Hours = hour;
+  time->Minutes = min;
+  time->Seconds = sec;
+}
+
+void DMC_McuRtcSetRtcFromEpoch(uint32_t epoch)
+{
+  RTC_TimeTypeDef sTime;
+  RTC_DateTypeDef sDate;
+
+  DMC_McuRtcFromEpoch(epoch + DMC_McuRtcTimeOffset, &sTime, &sDate);
+
+  if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  //  sDate->WeekDay = DMC_McuRtcGetDayOfWeek(mday, month, year - 2000);
+  if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
+
+void DMC_McuRtcShowRtc(void)
+{
+  RTC_TimeTypeDef sTime;
+  RTC_DateTypeDef sDate;
+
+  HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+
+  HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+
+  dmc_puts("Get Date/Time: ");
+  dmc_putint(sDate.WeekDay);
+  dmc_puts(" ");
+  dmc_putint2(sDate.Date, '0');
+  dmc_puts("-");
+  dmc_putint2(sDate.Month, '0');
+  dmc_puts("-");
+  dmc_putint2(sDate.Year, '0');
+  dmc_puts(" ");
+  dmc_putint2(sTime.Hours, '0');
+  dmc_puts(":");
+  dmc_putint2(sTime.Minutes, '0');
+  dmc_puts(":");
+  dmc_putint2(sTime.Seconds, '0');
+  dmc_putcr();
 }
 
 void DMC_McuRtcSetDateTime(struct DMC_MCU_RTC_DATE_TIME *DateTime)
@@ -63,8 +187,8 @@ void DMC_McuRtcSetDateTime(struct DMC_MCU_RTC_DATE_TIME *DateTime)
 
 void DMC_McuRtcGetDateTime(struct DMC_MCU_RTC_DATE_TIME *DateTime)
 {
-	RTC_TimeTypeDef sTime;
-	RTC_DateTypeDef sDate;
+	RTC_TimeTypeDef sTime = {0};
+	RTC_DateTypeDef sDate = {0};
 
 	HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
 
@@ -83,6 +207,12 @@ void DMC_McuRtcGetDateTime(struct DMC_MCU_RTC_DATE_TIME *DateTime)
 	DateTime->DayOfYear = DMC_McuRtcGetDayOfYear(DateTime->DayOfMonth, DateTime->Month, DateTime->Year);
 	DateTime->DaysInMonth = DMC_McuRtcGetNoOfDaysInMonth(DateTime->Year, DateTime->Month);
 	DateTime->DaysInYear = DMC_McuRtcGetNoOfDaysInYear(DateTime->Year);
+}
+
+void DMC_McuRtcGetDateAndTime(RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate)
+{
+  HAL_RTC_GetTime(&hrtc, sTime, RTC_FORMAT_BIN);
+  HAL_RTC_GetDate(&hrtc, sDate, RTC_FORMAT_BIN);
 }
 
 void DMC_McuRtcSetAlarmA(struct DMC_MCU_RTC_DATE_TIME *DateTime)

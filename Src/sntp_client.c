@@ -3,45 +3,78 @@
 #include "sntp_client.h"
 #include <time.h>
 
-/*Codes_SRS_SNTP_LWIP_30_001: [ The ntp_lwip shall implement the methods defined in sntp.h. ]*/
-// 1.nl.pool.ntp.org 83.98.155.30
-#define SNTP_CONF_IPADDR0   185
-#define SNTP_CONF_IPADDR1   255
-#define SNTP_CONF_IPADDR2   55
-#define SNTP_CONF_IPADDR3   20
-
 void SNTP_ObtainTime(void)
 {
 //  return;
-
-  dmc_puts("SNTP_ObtainTime\n");
+  RTC_TimeTypeDef sTime = {0};
+  RTC_DateTypeDef sDate = {0};
+//  dmc_puts("SNTP_ObtainTime\n");
   SNTP_Init();
 
-  // wait for time to be set
-  time_t now = 0;
-  struct tm timeinfo = { 0 };
-  int retry = 0;
-  const int retry_count = 10;
-  while(timeinfo.tm_year < (2016 - 1900) && ++retry < retry_count) {
-//    dmc_puts("Waiting for system time to be set... (");
-//    dmc_putc('.');
-    HAL_Delay(20);
-//    dmc_putint(retry);
-//    dmc_putc('/');
-//    dmc_putint(retry_count);
-//    dmc_puts(")\n");
-
-    time(&now);
-    localtime_r(&now, &timeinfo);
-  }
+//  // wait for time to be set
+//  time_t now = 0;
+//  struct tm timeinfo = { 0 };
+//  int retry = 0;
+//  const int retry_count = 10;
+//  while(timeinfo.tm_year < (2016 - 1900) && ++retry < retry_count) {
+////    dmc_puts("Waiting for system time to be set... (");
+////    dmc_putc('.');
+//    HAL_Delay(20);
+////    dmc_putint(retry);
+////    dmc_putc('/');
+////    dmc_putint(retry_count);
+////    dmc_puts(")\n");
+//
+////    DMC_McuRtcShowRtc();
+//
+////    DMC_McuRtcGetDateAndTime(&sTime, &sDate);
+////    dmc_puts("SNTP_ObtainTime Date/Time: ");
+////    dmc_putint(sDate.WeekDay);
+////    dmc_puts(" ");
+////    dmc_putint2(sDate.Date, '0');
+////    dmc_puts("-");
+////    dmc_putint2(sDate.Month, '0');
+////    dmc_puts("-");
+////    dmc_putint2(sDate.Year, '0');
+////    dmc_puts(" ");
+////    dmc_putint2(sTime.Hours, '0');
+////    dmc_puts(":");
+////    dmc_putint2(sTime.Minutes, '0');
+////    dmc_puts(":");
+////    dmc_putint2(sTime.Seconds, '0');
+////    dmc_putcr();
+//
+//    time(&now);
+//    localtime_r(&now, &timeinfo);
+//  }
 //  dmc_puts("\n");
 
-  dmc_putint2(timeinfo.tm_hour, '0');
-  dmc_putc(':');
-  dmc_putint2(timeinfo.tm_min, '0');
-  dmc_putc(':');
-  dmc_putint2(timeinfo.tm_sec, '0');
-  dmc_putcr();
+//  time(&now);
+//  localtime_r(&now, &timeinfo);
+//
+//  dmc_putint2(timeinfo.tm_hour, '0');
+//  dmc_putc(':');
+//  dmc_putint2(timeinfo.tm_min, '0');
+//  dmc_putc(':');
+//  dmc_putint2(timeinfo.tm_sec, '0');
+//  dmc_putcr();
+
+//  DMC_I2cRtcGetDateAndTime(&sTime, &sDate);
+//  dmc_puts("Date&Time: ");
+//  dmc_putint(sDate.WeekDay);
+//  dmc_puts(" ");
+//  dmc_putint2(sDate.Date, '0');
+//  dmc_puts("-");
+//  dmc_putint2(sDate.Month, '0');
+//  dmc_puts("-");
+//  dmc_putint2(sDate.Year, '0');
+//  dmc_puts(" ");
+//  dmc_putint2(sTime.Hours, '0');
+//  dmc_puts(":");
+//  dmc_putint2(sTime.Minutes, '0');
+//  dmc_puts(":");
+//  dmc_putint2(sTime.Seconds, '0');
+//  dmc_putcr();
 
   //    ESP_ERROR_CHECK( esp_wifi_stop() );
 }
@@ -72,23 +105,18 @@ int SNTP_SetServerName(const char* serverName)
 int SNTP_Init(void)
 {
   static ntp_initialized = 0;
-  static struct ip4_addr sntpserver_ip_addr;
+//  static struct ip4_addr sntpserver_ip_addr;
 
 
 //  dmc_puts("sntp_setserver\n");
   if (!ntp_initialized)
   {
     dmc_puts("Initializing SNTP\n");
-    sntp_setoperatingmode(SNTP_OPMODE_POLL);
-    //  // 1.nl.pool.ntp.org 83.98.155.30
-//    IP4_ADDR(&sntpserver_ip_addr, SNTP_CONF_IPADDR0, SNTP_CONF_IPADDR1, SNTP_CONF_IPADDR2, SNTP_CONF_IPADDR3);
-//    sntp_setserver(0, &sntpserver_ip_addr);
-    sntp_setservername(0, (char*)"nl.pool.ntp.org");
-//    sntp_setservername(1, (char*)"time.windows.com");
-//    sntp_setservername(2, (char*)"time.nist.gov");
+//    sntp_setoperatingmode(SNTP_OPMODE_POLL);
+//    sntp_setservername(0, (char*)"pool.ntp.org");
 //    sntp_set_timezone(0);
-
     sntp_init();
+
 //    time_t ts = 0;
 //    // Before 1980 is uninitialized
 //    while (ts < 10 * 365 * 24 * 3600)
