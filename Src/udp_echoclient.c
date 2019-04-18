@@ -52,6 +52,8 @@
 #include <stdio.h>
 #include "udp_echoclient.h"
 
+#define UDP_ECHOCLIENT_DEBUG    0
+
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 #define UDP_SERVER_PORT    50299    /* define the UDP local connection port */
@@ -83,8 +85,9 @@ void udp_echoclient_connect(void)
   ip_addr_t DestIPaddr;
   err_t err;
   
+#if (UDP_ECHOCLIENT_DEBUG)
   dmc_puts("udp_echoclient_connect\n");
-
+#endif
   /* Create a new UDP control block  */
   udp_echo_client_pcb = udp_new();
   
@@ -98,7 +101,9 @@ void udp_echoclient_connect(void)
     
     if (err == ERR_OK)
     {
+#if (UDP_ECHOCLIENT_DEBUG)
       dmc_puts("OK\n");
+#endif
       /* Set a receive callback for the udp_echo_client_pcb */
       udp_recv(udp_echo_client_pcb, udp_receive_callback, NULL);
     }
@@ -118,12 +123,14 @@ void udp_echoclient_send(void)
 {
   struct pbuf *p;
   
+//#if (UDP_ECHOCLIENT_DEBUG)
   dmc_puts("udp_echoclient_send\n");
+//#endif
 
   /*increment message count */
   udp_ec_message_count++;
 
-  sprintf((char*)ec_data, "sending udp client message %d", (int)udp_ec_message_count);
+  sprintf((char*)ec_data, "udp_echoclient_send: Sending UDP client message %d", (int)udp_ec_message_count);
 //  sprintf((char*)ec_data, "sending udp client message");
   
   /* allocate pbuf from pool*/
@@ -156,7 +163,9 @@ void udp_receive_callback(void *arg, struct udp_pcb *upcb, struct pbuf *p, const
   /*increment message count */
 //  udp_ec_message_count++;
   
+#if (UDP_ECHOCLIENT_DEBUG)
   dmc_puts("udp_receive_callback\n");
+#endif
 
   /* Free receive pbuf */
   pbuf_free(p);

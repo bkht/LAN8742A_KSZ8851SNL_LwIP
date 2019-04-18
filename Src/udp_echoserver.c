@@ -52,7 +52,7 @@
 #include <stdio.h>
 #include "udp_echoserver.h"
 
-#define UDP_ECHO_SERVER_DEBUG                 1
+#define UDP_ECHO_SERVER_DEBUG                 0
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -167,7 +167,11 @@ void udp_echoserver_receive_callback(void *arg, struct udp_pcb *upcb, struct pbu
     dmc_putc(':');
     dmc_putint(upcb->local_port);
     dmc_putc('\n');
+#endif
 
+    dmc_puts("UDP port ");
+    dmc_putint(upcb->local_port);
+    dmc_puts(" messages received from ");
     dmc_putint((addr->addr & 0xff));
     dmc_putc('.');
     dmc_putint((addr->addr & 0xff00) >> 8);
@@ -177,11 +181,11 @@ void udp_echoserver_receive_callback(void *arg, struct udp_pcb *upcb, struct pbu
     dmc_putint((addr->addr & 0xff000000) >> 24);
     dmc_putc(':');
     dmc_putint(port);
-    dmc_putc('\n');
+    dmc_puts(": \"");
 
     dmc_putslen(p->payload, p->len);
+    dmc_puts("\"");
     dmc_putcr();
-#endif
 
     dmc_swap_case_len(p->payload, p->len);
 

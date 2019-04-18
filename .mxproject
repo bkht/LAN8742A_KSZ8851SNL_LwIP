@@ -1,7 +1,7 @@
 [PreviousGenFiles]
-HeaderPath=C:/Users/jbk/STCubeGenerated/DI_003_LAN8742A_KSZ8851SNL_LwIP_cs2/Inc
+HeaderPath=C:/Users/jbk/STCubeGenerated/DI_003_LAN8742A_KSZ8851SNL_LwIP_cs2r/Inc
 HeaderFiles=gpio.h;crc.h;cryp.h;dma.h;ffconf.h;bsp_driver_sd.h;sd_diskio.h;fatfs.h;fdcan.h;hash.h;i2c.h;iwdg.h;lwip.h;lwipopts.h;ethernetif.h;quadspi.h;rng.h;rtc.h;sdmmc.h;spi.h;tim.h;usart.h;usb_host.h;usbh_conf.h;stm32h7xx_it.h;stm32h7xx_hal_conf.h;main.h;
-SourcePath=C:/Users/jbk/STCubeGenerated/DI_003_LAN8742A_KSZ8851SNL_LwIP_cs2/Src
+SourcePath=C:/Users/jbk/STCubeGenerated/DI_003_LAN8742A_KSZ8851SNL_LwIP_cs2r/Src
 SourceFiles=gpio.c;crc.c;cryp.c;dma.c;bsp_driver_sd.c;sd_diskio.c;fatfs.c;fdcan.c;hash.c;i2c.c;iwdg.c;lwip.c;ethernetif.c;quadspi.c;rng.c;rtc.c;sdmmc.c;spi.c;tim.c;usart.c;usb_host.c;usbh_conf.c;stm32h7xx_it.c;stm32h7xx_hal_msp.c;main.c;
 
 [PreviousLibFiles]

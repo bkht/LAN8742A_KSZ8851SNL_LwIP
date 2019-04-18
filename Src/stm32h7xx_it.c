@@ -22,6 +22,8 @@
 #include "main.h"
 #include "stm32h7xx_it.h"
 /* Private includes ----------------------------------------------------------*/
+#include "KSZ8851SNL_0.h"
+#include "KSZ8851SNL_1.h"
 /* USER CODE BEGIN Includes */
 /* USER CODE END Includes */
 
@@ -285,7 +287,7 @@ void EXTI0_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI0_IRQn 0 */
 //  dmc_puts("M1 Int\n");
-  ksz8851_IntHandler_0();
+//  ksz8851_IntHandler_0();
 
   /* USER CODE END EXTI0_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);

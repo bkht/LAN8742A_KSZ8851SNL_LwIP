@@ -59,6 +59,7 @@
 #include "netif/etharp.h"
 //#include "netif/ppp_oe.h"
 #include "ethernetif_ksz8851_1.h"
+#include "ksz8851snl_1.h"
 
 /* Define those to better describe your network interface. */
 #define KSZ8851_IFNAME0_1 'm'
@@ -143,12 +144,16 @@ static void low_level_init_KSZ8851_1(struct netif *netif)
   dmc_puts(TERMINAL_DEFAULT);
 #endif
 
-//  ksz8851_IntDisable_1();
-  ksz8851_IntEnable_1();
-  ksz8851snl_reset_tx_1();
-  ksz8851snl_reset_rx_1();
-  ksz8851_IntClearAll_1();
-  ksz8851_IntEnable_1();
+  ksz8851_IntEnable(&KSZ8851_interface_1);
+  ksz8851snl_reset_tx(&KSZ8851_interface_1);
+  ksz8851snl_reset_rx(&KSZ8851_interface_1);
+  ksz8851_IntClearAll(&KSZ8851_interface_1);
+  ksz8851_IntEnable(&KSZ8851_interface_1);
+//  ksz8851_IntEnable_1();
+//  ksz8851snl_reset_tx_1();
+//  ksz8851snl_reset_rx_1();
+//  ksz8851_IntClearAll_1();
+//  ksz8851_IntEnable_1();
 
   /* device capabilities */
   /* don't set NETIF_FLAG_ETHARP if this device is not an ethernet one */
@@ -320,10 +325,12 @@ static err_t low_level_output_KSZ8851_1(struct netif *netif, struct pbuf *p)
     return ERR_BUF;
   }
 
-  ksz8851snl_reset_tx_1();
+  ksz8851snl_reset_tx(&KSZ8851_interface_1);
+//  ksz8851snl_reset_tx_1();
 
   /*signal that packet should be sent();*/
-  ksz8851_Send_1(lwip_buf_1, tx_len);
+  ksz8851_Send(&KSZ8851_interface_1, lwip_buf_1, tx_len);
+//  ksz8851_Send_1(lwip_buf_1, tx_len);
 
 #if ETH_PAD_SIZE
   pbuf_header(p, ETH_PAD_SIZE); /* reclaim the padding word */
@@ -374,7 +381,8 @@ static struct pbuf * low_level_input_KSZ8851_1(struct netif *netif)
      variable. */
   memset(lwip_buf_1, 0, MAX_FRAMELEN);
 
-  len = ksz8851_Receive_1(lwip_buf_1, MAX_FRAMELEN);
+  len = ksz8851_Receive(&KSZ8851_interface_1, lwip_buf_1, MAX_FRAMELEN);
+//  len = ksz8851_Receive_1(lwip_buf_1, MAX_FRAMELEN);
 //  dmc_puthex4cr(len);
 
 //  ksz8851snl_reset_rx_1();
@@ -385,7 +393,7 @@ static struct pbuf * low_level_input_KSZ8851_1(struct netif *netif)
   {
     return NULL;
   }
-  uint8_t *RxData = &lwip_buf_1[11];
+  uint8_t *RxData = &lwip_buf_1[0];
 
 //  if (RxData[12] == 0x00)
 //  {
@@ -399,7 +407,8 @@ static struct pbuf * low_level_input_KSZ8851_1(struct netif *netif)
 //  dmc_puts(TERMINAL_DEFAULT);
 #endif
 
-  ksz8851snl_reset_rx_1();
+  ksz8851snl_reset_rx(&KSZ8851_interface_1);
+//  ksz8851snl_reset_rx_1();
 
   uint8_t displaced = 0;
   if (RxData[12] != 0x08)
@@ -680,6 +689,7 @@ err_t ethernetif_init_KSZ8851_1(struct netif *netif)
   dmc_putint((netif->ip_addr.addr & 0xff0000) >> 16);
   dmc_putc('.');
   dmc_putint((netif->ip_addr.addr & 0xff000000) >> 24);
+  dmc_putc('\n');
   dmc_puts(TERMINAL_DEFAULT);
 #endif
 
@@ -698,34 +708,35 @@ void ethernet_link_check_state_KSZ8851_1(struct netif *netif)
 
 //  dmc_puts("ethernet_link_check_state\n");
 
-  PHYLinkState = KSZ8851_1_GetLinkState();
+  PHYLinkState = KSZ8851_GetLinkState(&KSZ8851_interface_1);
+//  PHYLinkState = KSZ8851_1_GetLinkState();
 
-  if(netif_is_link_up(netif) && (PHYLinkState <= KSZ8851_1_STATUS_LINK_DOWN))
+  if(netif_is_link_up(netif) && (PHYLinkState <= KSZ8851_STATUS_LINK_DOWN))
   {
 //    HAL_ETH_Stop(&heth);
     netif_set_down(netif);
     netif_set_link_down(netif);
   }
-  else if(!netif_is_link_up(netif) && (PHYLinkState > KSZ8851_1_STATUS_LINK_DOWN))
+  else if(!netif_is_link_up(netif) && (PHYLinkState > KSZ8851_STATUS_LINK_DOWN))
   {
     switch (PHYLinkState)
     {
-    case KSZ8851_1_STATUS_100MBITS_FULLDUPLEX:
+    case KSZ8851_STATUS_100MBITS_FULLDUPLEX:
       duplex = ETH_FULLDUPLEX_MODE;
       speed = ETH_SPEED_100M;
       linkchanged = 1;
       break;
-    case KSZ8851_1_STATUS_100MBITS_HALFDUPLEX:
+    case KSZ8851_STATUS_100MBITS_HALFDUPLEX:
       duplex = ETH_HALFDUPLEX_MODE;
       speed = ETH_SPEED_100M;
       linkchanged = 1;
       break;
-    case KSZ8851_1_STATUS_10MBITS_FULLDUPLEX:
+    case KSZ8851_STATUS_10MBITS_FULLDUPLEX:
       duplex = ETH_FULLDUPLEX_MODE;
       speed = ETH_SPEED_10M;
       linkchanged = 1;
       break;
-    case KSZ8851_1_STATUS_10MBITS_HALFDUPLEX:
+    case KSZ8851_STATUS_10MBITS_HALFDUPLEX:
       duplex = ETH_HALFDUPLEX_MODE;
       speed = ETH_SPEED_10M;
       linkchanged = 1;

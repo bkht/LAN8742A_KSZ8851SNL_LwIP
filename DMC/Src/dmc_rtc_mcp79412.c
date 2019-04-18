@@ -181,21 +181,21 @@ void DMC_I2cRtcSetRtcFromEpoch(uint32_t epoch)
 
   DMC_McuRtcFromEpoch(epoch + DMC_I2cRtcTimeOffset, &sTime, &sDate);
 
-  dmc_puts("DMC_I2cRtcSetRtcFromEpoch: ");
-  dmc_putint(sDate.WeekDay);
-  dmc_puts(" ");
-  dmc_putint2(sDate.Date, '0');
-  dmc_puts("-");
-  dmc_putint2(sDate.Month, '0');
-  dmc_puts("-");
-  dmc_putint2(sDate.Year, '0');
-  dmc_puts(" ");
-  dmc_putint2(sTime.Hours, '0');
-  dmc_puts(":");
-  dmc_putint2(sTime.Minutes, '0');
-  dmc_puts(":");
-  dmc_putint2(sTime.Seconds, '0');
-  dmc_putcr();
+//  dmc_puts("DMC_I2cRtcSetRtcFromEpoch: ");
+//  dmc_putint(sDate.WeekDay);
+//  dmc_puts(" ");
+//  dmc_putint2(sDate.Date, '0');
+//  dmc_puts("-");
+//  dmc_putint2(sDate.Month, '0');
+//  dmc_puts("-");
+//  dmc_putint2(sDate.Year, '0');
+//  dmc_puts(" ");
+//  dmc_putint2(sTime.Hours, '0');
+//  dmc_puts(":");
+//  dmc_putint2(sTime.Minutes, '0');
+//  dmc_puts(":");
+//  dmc_putint2(sTime.Seconds, '0');
+//  dmc_putcr();
 
   DMC_I2cRtcSetDateAndTime(&sTime, &sDate);
 }
@@ -211,21 +211,21 @@ void DMC_I2cRtcSetDateAndTime(RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate)
 //    sDate->Date = noOfDaysInMonth;
 //  }
 
-  dmc_puts("DMC_I2cRtcSetDateAndTime: ");
-  dmc_putint(sDate->WeekDay);
-  dmc_puts(" ");
-  dmc_putint2(sDate->Date, '0');
-  dmc_puts("-");
-  dmc_putint2(sDate->Month, '0');
-  dmc_puts("-");
-  dmc_putint2(sDate->Year, '0');
-  dmc_puts(" ");
-  dmc_putint2(sTime->Hours, '0');
-  dmc_puts(":");
-  dmc_putint2(sTime->Minutes, '0');
-  dmc_puts(":");
-  dmc_putint2(sTime->Seconds, '0');
-  dmc_putcr();
+//  dmc_puts("DMC_I2cRtcSetDateAndTime: ");
+//  dmc_putint(sDate->WeekDay);
+//  dmc_puts(" ");
+//  dmc_putint2(sDate->Date, '0');
+//  dmc_puts("-");
+//  dmc_putint2(sDate->Month, '0');
+//  dmc_puts("-");
+//  dmc_putint2(sDate->Year, '0');
+//  dmc_puts(" ");
+//  dmc_putint2(sTime->Hours, '0');
+//  dmc_puts(":");
+//  dmc_putint2(sTime->Minutes, '0');
+//  dmc_puts(":");
+//  dmc_putint2(sTime->Seconds, '0');
+//  dmc_putcr();
 
 //  printf("%d %02d-%02d-20%02d %02d:%02d:%02d\n", dayOfWeek, dayOfMonth, month, year, hour, minute, second);
 

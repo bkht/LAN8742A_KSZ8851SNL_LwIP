@@ -26,13 +26,13 @@
 #endif /* MDK ARM Compiler */
 
 #define LAN8742           1
-#define KSZ8841_0         1
-#define KSZ8841_1         1
+#define KSZ8851_0         1
+#define KSZ8851_1         1
 
-#if (KSZ8841_0)
+#if (KSZ8851_0)
 #include "ethernetif_ksz8851_0.h"
 #endif
-#if (KSZ8841_1)
+#if (KSZ8851_1)
 #include "ethernetif_ksz8851_1.h"
 #endif
 
@@ -59,7 +59,7 @@ ip4_addr_t gw0;
 uint8_t IP_ADDRESS0[4];
 #endif
 
-#if (KSZ8841_0)
+#if (KSZ8851_0)
 struct netif gnetif1;
 ip4_addr_t ipaddr1;
 ip4_addr_t netmask1;
@@ -67,7 +67,7 @@ ip4_addr_t gw1;
 uint8_t IP_ADDRESS1[4];
 #endif
 
-#if (KSZ8841_1)
+#if (KSZ8851_1)
 struct netif gnetif2;
 ip4_addr_t ipaddr2;
 ip4_addr_t netmask2;
@@ -75,7 +75,7 @@ ip4_addr_t gw2;
 uint8_t IP_ADDRESS2[4];
 #endif
 
-#if (LAN8742 | KSZ8841_0 | KSZ8841_1)
+#if (LAN8742 | KSZ8851_0 | KSZ8851_1)
 uint8_t NETMASK_ADDRESS[4];
 uint8_t GATEWAY_ADDRESS[4];
 #endif
@@ -98,21 +98,21 @@ void MX_LWIP_Init(void)
   IP_ADDRESS0[3]     = 232;
 #endif
 
-#if (KSZ8841_0)
+#if (KSZ8851_0)
   IP_ADDRESS1[0]     = 192;
   IP_ADDRESS1[1]     = 168;
   IP_ADDRESS1[2]     = 25;
   IP_ADDRESS1[3]     = 233;
 #endif
 
-#if (KSZ8841_1)
+#if (KSZ8851_1)
   IP_ADDRESS2[0]     = 192;
   IP_ADDRESS2[1]     = 168;
   IP_ADDRESS2[2]     = 25;
   IP_ADDRESS2[3]     = 234;
 #endif
 
-#if (LAN8742 | KSZ8841_0 | KSZ8841_1)
+#if (LAN8742 | KSZ8851_0 | KSZ8851_1)
   NETMASK_ADDRESS[0] = 255;
   NETMASK_ADDRESS[1] = 255;
   NETMASK_ADDRESS[2] = 255;
@@ -137,7 +137,7 @@ void MX_LWIP_Init(void)
   netif_add(&gnetif0, &ipaddr0, &netmask0, &gw0, NULL, &ethernetif_init, &ethernet_input);
 #endif
 
-#if (KSZ8841_0)
+#if (KSZ8851_0)
   /* IP addresses initialization without DHCP (IPv4) */
   IP4_ADDR(&ipaddr1, IP_ADDRESS1[0], IP_ADDRESS1[1], IP_ADDRESS1[2], IP_ADDRESS1[3]);
   IP4_ADDR(&netmask1, NETMASK_ADDRESS[0], NETMASK_ADDRESS[1] , NETMASK_ADDRESS[2], NETMASK_ADDRESS[3]);
@@ -147,7 +147,7 @@ void MX_LWIP_Init(void)
   netif_add(&gnetif1, &ipaddr1, &netmask1, &gw1, NULL, &ethernetif_init_KSZ8851_0, &ethernet_input);
 #endif
 
-#if (KSZ8841_1)
+#if (KSZ8851_1)
   /* IP addresses initialization without DHCP (IPv4) */
   IP4_ADDR(&ipaddr2, IP_ADDRESS2[0], IP_ADDRESS2[1], IP_ADDRESS2[2], IP_ADDRESS2[3]);
   IP4_ADDR(&netmask2, NETMASK_ADDRESS[0], NETMASK_ADDRESS[1] , NETMASK_ADDRESS[2], NETMASK_ADDRESS[3]);
@@ -160,9 +160,9 @@ void MX_LWIP_Init(void)
   /* Registers the default network interface */
 #if (LAN8742)
   netif_set_default(&gnetif0);
-#elif  (KSZ8841_0)
+#elif  (KSZ8851_0)
   netif_set_default(&gnetif1);
-#elif  (KSZ8841_1)
+#elif  (KSZ8851_1)
   netif_set_default(&gnetif2);
 #endif
 
@@ -179,7 +179,7 @@ void MX_LWIP_Init(void)
   }
 #endif
 
-#if (KSZ8841_0)
+#if (KSZ8851_0)
   if (netif_is_link_up(&gnetif1))
   {
     /* When the netif is fully configured this function must be called */
@@ -192,7 +192,7 @@ void MX_LWIP_Init(void)
   }
 #endif
 
-#if (KSZ8841_1)
+#if (KSZ8851_1)
   if (netif_is_link_up(&gnetif2))
   {
     /* When the netif is fully configured this function must be called */
@@ -236,11 +236,11 @@ void MX_LWIP_Process(void)
   ethernetif_input(&gnetif0);
 #endif
 
-#if (KSZ8841_0)
+#if (KSZ8851_0)
   ethernetif_input_KSZ8851_0(&gnetif1);
 #endif
 
-#if (KSZ8841_1)
+#if (KSZ8851_1)
   ethernetif_input_KSZ8851_1(&gnetif2);
 #endif
 

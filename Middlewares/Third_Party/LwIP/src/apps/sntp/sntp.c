@@ -63,6 +63,8 @@
 #include <string.h>
 #include <time.h>
 
+#define SNTP_DEBUG       0
+
 #if LWIP_UDP
 
 /* Handle support for more than one server via SNTP_MAX_SERVERS */
@@ -217,8 +219,10 @@ sntp_process(u32_t *receive_timestamp)
   u32_t t = is_1900_based ? (rx_secs - DIFF_SEC_1900_1970) : (rx_secs + DIFF_SEC_1970_2036);
   time_t tim = t;
 
+#if (SNTP_DEBUG)
   dmc_puts("sntp_process: t = ");
   dmc_putintcr(t);
+#endif
 
 #if SNTP_CALC_TIME_US
   u32_t us = lwip_ntohl(receive_timestamp[1]) / 4295;
@@ -342,7 +346,9 @@ sntp_recv(void *arg, struct udp_pcb* pcb, struct pbuf *p, const ip_addr_t *addr,
   u32_t receive_timestamp[SNTP_RECEIVE_TIME_SIZE];
   err_t err;
 
-//  dmc_puts("sntp_recv\n");
+#if (SNTP_DEBUG)
+  dmc_puts("sntp_recv\n");
+#endif
 
   LWIP_UNUSED_ARG(arg);
   LWIP_UNUSED_ARG(pcb);
@@ -370,7 +376,11 @@ sntp_recv(void *arg, struct udp_pcb* pcb, struct pbuf *p, const ip_addr_t *addr,
           ((sntp_opmode == SNTP_OPMODE_LISTENONLY) && (mode == SNTP_MODE_BROADCAST))) {
         pbuf_copy_partial(p, &stratum, 1, SNTP_OFFSET_STRATUM);
         if (stratum == SNTP_STRATUM_KOD) {
+
+#if (SNTP_DEBUG)
           dmc_puts("sntp_recv: Received Kiss-of-Death\n");
+#endif
+
           /* Kiss-of-death packet. Use another server or increase UPDATE_DELAY. */
           err = SNTP_ERR_KOD;
           LWIP_DEBUGF(SNTP_DEBUG_STATE, ("sntp_recv: Received Kiss-of-Death\n"));
@@ -387,20 +397,30 @@ sntp_recv(void *arg, struct udp_pcb* pcb, struct pbuf *p, const ip_addr_t *addr,
 #endif /* SNTP_CHECK_RESPONSE >= 2 */
           /* @todo: add code for SNTP_CHECK_RESPONSE >= 3 and >= 4 here */
           {
+
+#if (SNTP_DEBUG)
             dmc_puts("sntp_recv: Correct answer\n");
+#endif
+
             /* correct answer */
             err = ERR_OK;
             pbuf_copy_partial(p, &receive_timestamp, SNTP_RECEIVE_TIME_SIZE * 4, SNTP_OFFSET_TRANSMIT_TIME);
           }
         }
       } else {
+
+#if (SNTP_DEBUG)
         dmc_puts("sntp_recv: Invalid mode in response\n");
+#endif
+
         LWIP_DEBUGF(SNTP_DEBUG_WARN, ("sntp_recv: Invalid mode in response: %"U16_F"\n", (u16_t)mode));
         /* wait for correct response */
         err = ERR_TIMEOUT;
       }
     } else {
+#if (SNTP_DEBUG)
       dmc_puts("sntp_recv: Invalid packet length\n");
+#endif
       LWIP_DEBUGF(SNTP_DEBUG_WARN, ("sntp_recv: Invalid packet length: %"U16_F"\n", p->tot_len));
     }
   }
@@ -412,7 +432,9 @@ sntp_recv(void *arg, struct udp_pcb* pcb, struct pbuf *p, const ip_addr_t *addr,
 #endif /* SNTP_CHECK_RESPONSE >= 1 */
   pbuf_free(p);
   if (err == ERR_OK) {
+#if (SNTP_DEBUG)
     dmc_puts("sntp_recv: OK\n");
+#endif
 //    dmc_putintcr(receive_timestamp);
 
     sntp_process(receive_timestamp);
@@ -505,7 +527,9 @@ sntp_request(void *arg)
   ip_addr_t sntp_server_address;
   err_t err;
 
+#if (SNTP_DEBUG)
   dmc_puts("sntp_request\n");
+#endif
 
   LWIP_UNUSED_ARG(arg);
 
@@ -536,15 +560,19 @@ sntp_request(void *arg)
 //  dmc_putcr();
 
   if (err == ERR_OK) {
+#if (SNTP_DEBUG)
     dmc_puts("sntp_request: current server address is ");
     dmc_puts(ipaddr_ntoa(&sntp_server_address));
     dmc_putcr();
+#endif
 
     LWIP_DEBUGF(SNTP_DEBUG_TRACE, ("sntp_request: current server address is %s\n",
       ipaddr_ntoa(&sntp_server_address)));
     sntp_send_request(&sntp_server_address);
   } else {
+#if (SNTP_DEBUG)
     dmc_puts("address conversion failed, try another server\n");
+#endif
     /* address conversion failed, try another server */
     LWIP_DEBUGF(SNTP_DEBUG_WARN_STATE, ("sntp_request: Invalid server address, trying next server.\n"));
     sys_timeout((u32_t)SNTP_RETRY_TIMEOUT, sntp_try_next_server, NULL);
@@ -579,7 +607,7 @@ sntp_init(void)
 #error SNTP_SERVER_ADDRESS string not supported SNTP_SERVER_DNS==0
 #endif
 #else
-  // Jack
+//  // Jack
   IP4_ADDR(&sntpserver_ip_addr, SNTP_CONF_IPADDR0, SNTP_CONF_IPADDR1, SNTP_CONF_IPADDR2, SNTP_CONF_IPADDR3);
   sntp_setserver(0, &sntpserver_ip_addr);
 #endif /* SNTP_SERVER_ADDRESS */
@@ -593,8 +621,8 @@ sntp_init(void)
       udp_recv(sntp_pcb, sntp_recv, NULL);
 
       // Jack
-      udp_bind(sntp_pcb, &sntpclient_ip_addr, SNTP_PORT);
-      udp_connect(sntp_pcb, &sntpserver_ip_addr, SNTP_PORT);
+//      udp_bind(sntp_pcb, &sntpclient_ip_addr, SNTP_PORT);
+//      udp_connect(sntp_pcb, &sntpserver_ip_addr, SNTP_PORT);
 //      udp_bind(sntp_pcb, IP_ANY_TYPE, SNTP_PORT);
 //      udp_connect(sntp_pcb, IP_ANY_TYPE, SNTP_PORT);
 
@@ -610,7 +638,7 @@ sntp_init(void)
         udp_bind(sntp_pcb, IP_ANY_TYPE, SNTP_PORT);
 
         // Jack
-        udp_connect(sntp_pcb, &sntpserver_ip_addr, SNTP_PORT);
+//        udp_connect(sntp_pcb, &sntpserver_ip_addr, SNTP_PORT);
 //        udp_connect(sntp_pcb, IP_ANY_TYPE, SNTP_PORT);
       }
     }

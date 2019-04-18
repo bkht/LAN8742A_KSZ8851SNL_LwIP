@@ -231,6 +231,7 @@
 
 #define RX_FRH_STAT_REG             	0x7C /**< Receive Frame Header Status Register */
 #define REG_RX_FHR_STATUS          		0x7C     /* RXFHSR */
+#define VALID_FRAME_MASK              0x8000   /* Frame in the receive packet memory is valid */
 #define RX_VALID                    	0x8000   /* Frame in the receive packet memory is valid */
 #define RX_ICMP_ERROR               	0x2000   /* ICMP checksum field doesn't match */
 #define RX_IP_ERROR                 	0x1000   /* IP checksum field doesn't match */
@@ -246,7 +247,9 @@
 #define RX_BAD_CRC                  	0x0001   /* Received frame has a CRC error */
 #define RX_ERRORS                   	( RX_BAD_CRC | RX_TOO_LONG | RX_RUNT_ERROR | RX_PHY_ERROR | \
                                    		RX_ICMP_ERROR | RX_IP_ERROR | RX_TCP_ERROR | RX_UDP_ERROR )
-
+                                      // 0x3C17 /**< CRC OK for ICMP, IP, TCP, UDP; /
+                                      //       *   MII error; /
+                                      //       *   Frame too long error */
 #define RX_FRH_BC_REG               	0x7E /**< Receive Frame Header Bytecount Register */
 #define REG_RX_FHR_BYTE_CNT        		0x7E     /* RXFHBCR */
 #define RX_BYTE_CNT_MASK            	0x0FFF   /* Received frame byte size mask */
@@ -314,7 +317,7 @@
 
 #define INT_ENABLE_REG              	0x90 /**< Interrupt Enable Register */
 #define REG_INT_MASK               		0x90     /* IER */
-#define REG_INT_ENABLE		       		0x90     /* IER */
+#define REG_INT_ENABLE		       		  0x90     /* IER */
 #define INT_PHY                    		0x8000   /* Enable link change interrupt */
 #define INT_TX                      	0x4000   /* Enable transmit done interrupt */
 #define INT_RX                      	0x2000   /* Enable receive interrupt */
@@ -638,7 +641,6 @@
 #define RECEIVE_VALID_FRAME_MASK     	0x3C17 /**< CRC OK for ICMP, IP, TCP, UDP; /
                                              *   MII error; /
                                              *   Frame too long error */
-#define VALID_FRAME_MASK             	0x8000
 #define RX_BYTE_CNT_MASK             	0x0FFF /**< Used to mask the reserved bits */
 #define LSB_MASK                     	0x00FF /**< Used to mask the LSB */
 #define MSB_POS                      	0x0008 /**< Used to mark the MSB pos */
